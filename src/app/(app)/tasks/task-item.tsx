@@ -1,0 +1,79 @@
+"use client";
+
+import { useTransition } from "react";
+import { Check } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { PriorityBadge } from "@/components/ui/badge";
+import { ConfirmDelete } from "@/components/confirm-delete";
+import { formatDate } from "@/lib/format";
+import { toggleTask, deleteTask } from "@/lib/actions/tasks";
+
+export function TaskItem({
+  id,
+  title,
+  description,
+  completed,
+  priority,
+  dueDate,
+  assigneeName,
+  assigneeColor,
+  related,
+}: {
+  id: string;
+  title: string;
+  description: string | null;
+  completed: boolean;
+  priority: string;
+  dueDate: Date | null;
+  assigneeName: string;
+  assigneeColor: string;
+  related: string | null;
+}) {
+  const [pending, start] = useTransition();
+  const overdue = dueDate && !completed && new Date(dueDate) < new Date();
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
+      <button
+        onClick={() => start(() => toggleTask(id, !completed))}
+        disabled={pending}
+        className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
+          completed
+            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+            : "border-gray-300 hover:border-[var(--brand)]"
+        }`}
+        aria-label={completed ? "علامت‌گذاری به‌عنوان انجام‌نشده" : "علامت‌گذاری به‌عنوان انجام‌شده"}
+      >
+        {completed && <Check size={13} />}
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <p
+          className={`text-sm font-medium ${
+            completed ? "text-muted line-through" : ""
+          }`}
+        >
+          {title}
+        </p>
+        {description && (
+          <p className="truncate text-xs text-muted">{description}</p>
+        )}
+        {related && <p className="text-xs text-[var(--brand)]">{related}</p>}
+      </div>
+
+      <PriorityBadge priority={priority} />
+
+      <span
+        className={`hidden w-28 text-end text-xs sm:block ${
+          overdue ? "font-medium text-red-600" : "text-muted"
+        }`}
+      >
+        {dueDate ? formatDate(dueDate) : "بدون مهلت"}
+      </span>
+
+      <Avatar name={assigneeName} color={assigneeColor} size={26} />
+
+      <ConfirmDelete onDelete={deleteTask.bind(null, id)} iconOnly />
+    </div>
+  );
+}

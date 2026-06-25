@@ -1,0 +1,294 @@
+// Nexus CRM — Prisma schema
+// Full-featured CRM: contacts, companies, deals pipeline, activities,
+// tasks/reminders, tags, roles/permissions, team chat, reporting.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth & people
+// ---------------------------------------------------------------------------
+
+enum Role {
+  OWNER // full control incl. user management
+  ADMIN // manage data + users (except owners)
+  MEMBER // standard team member
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(MEMBER)
+  avatarColor  String   @default("#6366f1")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // ownership / assignment relations
+  companies        Company[]
+  contacts         Contact[]
+  deals            Deal[]
+  activities       Activity[]
+  assignedTasks    Task[]           @relation("TaskAssignee")
+  channelMembers   ChannelMember[]
+  messages         Message[]
+  createdChannels  Channel[]        @relation("ChannelCreator")
+  reminders        Reminder[]
+}
+
+// ---------------------------------------------------------------------------
+// CRM core
+// ---------------------------------------------------------------------------
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  industry  String?
+  website   String?
+  phone     String?
+  address   String?
+  notes     String?
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts   Contact[]
+  deals      Deal[]
+  activities Activity[]
+  tags       Tag[]      @relation("CompanyTags")
+
+  @@index([ownerId])
+  @@index([name])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  title     String?
+  status    String   @default("active")
+  notes     String?
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals      Deal[]
+  activities Activity[]
+  tasks      Task[]
+  reminders  Reminder[]
+  tags       Tag[]      @relation("ContactTags")
+
+  @@index([ownerId])
+  @@index([companyId])
+  @@index([lastName])
+}
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Deal {
+  id                String     @id @default(cuid())
+  title             String
+  value             Decimal    @default(0) @db.Decimal(14, 2)
+  currency          String     @default("USD")
+  stage             DealStage  @default(LEAD)
+  status            DealStatus @default(OPEN)
+  probability       Int        @default(10)
+  expectedCloseDate DateTime?
+  closedAt          DateTime?
+  notes             String?
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activities Activity[]
+  tasks      Task[]
+  tags       Tag[]      @relation("DealTags")
+
+  @@index([ownerId])
+  @@index([stage])
+  @@index([status])
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  STAGE_CHANGE
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType @default(NOTE)
+  content   String
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  contactId String?
+  contact   Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  dealId    String?
+  deal      Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@index([contactId])
+  @@index([dealId])
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean      @default(false)
+  priority    TaskPriority @default(MEDIUM)
+
+  assigneeId String
+  assignee   User    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  contactId  String?
+  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  dealId     String?
+  deal       Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assigneeId])
+  @@index([completed])
+  @@index([dueDate])
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String @default("#64748b")
+
+  contacts  Contact[] @relation("ContactTags")
+  companies Company[] @relation("CompanyTags")
+  deals     Deal[]    @relation("DealTags")
+}
+
+// ---------------------------------------------------------------------------
+// Inner team communication (chat)
+// ---------------------------------------------------------------------------
+
+model Channel {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  isDirect    Boolean         @default(false)
+  createdById String
+  createdBy   User            @relation("ChannelCreator", fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
+
+  members  ChannelMember[]
+  messages Message[]
+}
+
+model ChannelMember {
+  id         String   @id @default(cuid())
+  channelId  String
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime @default(now())
+  joinedAt   DateTime @default(now())
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  // reply / quote
+  replyToId String?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReplies")
+
+  @@index([channelId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Calendar reminders (team-public or personal-private)
+// ---------------------------------------------------------------------------
+
+enum ReminderAction {
+  GENERAL // a plain reminder
+  CALL // call the contact
+  WHATSAPP // send the contact a WhatsApp message
+  SMS // send the contact an SMS
+}
+
+model Reminder {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime // when the reminder is for (date + time)
+  isPublic    Boolean        @default(false) // true = whole team, false = only creator
+  color       String         @default("#d4af37")
+  done        Boolean        @default(false)
+
+  // outreach: call / whatsapp / sms a specific contact
+  action      ReminderAction @default(GENERAL)
+  messageBody String? // prefilled text for WhatsApp/SMS
+  contactId   String?
+  contact     Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([date])
+  @@index([createdById])
+}

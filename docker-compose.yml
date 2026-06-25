@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: crm
+    volumes:
+      # Postgres 18 images store data in a subdir of /var/lib/postgresql
+      - crm_db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No host port published in production — only the app talks to it.
+    expose:
+      - "5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    labels:
+      autoheal: "true"
+    healthcheck:
+      # Node 24 has global fetch; restarts the app if it hangs (not just crashes).
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://crm:${DB_PASSWORD:?set DB_PASSWORD in .env}@db:5432/crm?schema=public"
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
+      AUTH_TRUST_HOST: "true"
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # First-run admin (idempotent). Set these in your .env.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+    ports:
+      # Bound to loopback only — the public reaches the app through Nginx/HTTPS,
+      # never directly (Docker would otherwise bypass the host firewall).
+      - "127.0.0.1:3000:3000"
+
+  # Restarts any container marked unhealthy (e.g. a hung app) automatically.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  crm_db_data:

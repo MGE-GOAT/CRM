@@ -1,0 +1,47 @@
+"use client";
+
+import { useRef } from "react";
+import { Select, Textarea, SubmitButton } from "@/components/ui/form";
+import { logActivity } from "@/lib/actions/activities";
+
+export function LogActivity({
+  contactId,
+  companyId,
+  dealId,
+}: {
+  contactId?: string;
+  companyId?: string;
+  dealId?: string;
+}) {
+  const ref = useRef<HTMLFormElement>(null);
+
+  return (
+    <form
+      ref={ref}
+      action={async (fd) => {
+        await logActivity(fd);
+        ref.current?.reset();
+      }}
+      className="space-y-3 rounded-xl border border-border bg-surface p-4"
+    >
+      {contactId && <input type="hidden" name="contactId" value={contactId} />}
+      {companyId && <input type="hidden" name="companyId" value={companyId} />}
+      {dealId && <input type="hidden" name="dealId" value={dealId} />}
+      <Textarea
+        name="content"
+        rows={2}
+        required
+        placeholder="ثبت یادداشت، تماس، ایمیل یا جلسه…"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <Select name="type" defaultValue="NOTE" className="w-40">
+          <option value="NOTE">یادداشت</option>
+          <option value="CALL">تماس</option>
+          <option value="EMAIL">ایمیل</option>
+          <option value="MEETING">جلسه</option>
+        </Select>
+        <SubmitButton>ثبت فعالیت</SubmitButton>
+      </div>
+    </form>
+  );
+}

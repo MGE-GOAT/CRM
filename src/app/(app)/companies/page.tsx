@@ -1,0 +1,93 @@
+import Link from "next/link";
+import { Building2 } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
+import { SearchInput } from "@/components/search-input";
+import { ConfirmDelete } from "@/components/confirm-delete";
+import { CompanyForm } from "./company-form";
+import { createCompany, updateCompany, deleteCompany } from "@/lib/actions/companies";
+import { formatNumber } from "@/lib/format";
+
+export default async function CompaniesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const where = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: "insensitive" as const } },
+          { industry: { contains: q, mode: "insensitive" as const } },
+          { domain: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  const companies = await prisma.company.findMany({
+    where,
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { contacts: true, deals: true } },
+    },
+  });
+
+  return (
+    <div>
+      <PageHeader
+        title="شرکت‌ها"
+        subtitle={`${formatNumber(companies.length)} شرکت`}
+        action={
+          <div className="flex items-center gap-2">
+            <SearchInput placeholder="جستجوی شرکت‌ها…" />
+            <CompanyForm mode="create" action={createCompany} />
+          </div>
+        }
+      />
+
+      <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+        {companies.length === 0 && (
+          <p className="col-span-full py-10 text-center text-muted">
+            شرکتی یافت نشد.
+          </p>
+        )}
+        {companies.map((c) => (
+          <div
+            key={c.id}
+            className="group rounded-xl border border-border bg-surface p-4 transition hover:shadow-sm"
+          >
+            <div className="flex items-start justify-between">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-[var(--brand)]">
+                <Building2 size={18} />
+              </div>
+              <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                <CompanyForm
+                  mode="edit"
+                  action={updateCompany.bind(null, c.id)}
+                  values={{
+                    name: c.name,
+                    industry: c.industry,
+                    domain: c.domain,
+                    website: c.website,
+                    phone: c.phone,
+                    address: c.address,
+                    notes: c.notes,
+                  }}
+                />
+                <ConfirmDelete onDelete={deleteCompany.bind(null, c.id)} iconOnly />
+              </div>
+            </div>
+            <Link href={`/companies/${c.id}`} className="mt-3 block">
+              <h3 className="font-semibold hover:text-[var(--brand)]">{c.name}</h3>
+              <p className="text-sm text-muted">{c.industry ?? "—"}</p>
+            </Link>
+            <div className="mt-3 flex gap-4 text-xs text-muted">
+              <span>{formatNumber(c._count.contacts)} مخاطب</span>
+              <span>{formatNumber(c._count.deals)} معامله</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

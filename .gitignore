@@ -30,8 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — ignore real secrets, but keep the example templates tracked
 .env*
+!.env.example
+!.env.production.example
+
+# local tooling / backups (not part of the app)
+.claude-flow/
+src.bak/
 
 # vercel
 .vercel
