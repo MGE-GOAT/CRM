@@ -19,6 +19,7 @@ const schema = z.object({
   contactId: z.string().optional(),
   expectedCloseDate: z.string().optional(),
   notes: z.string().max(10000).optional(),
+  source: z.string().max(100).optional(),
 });
 
 function statusForStage(stage: string): DealStatus {
@@ -39,6 +40,7 @@ export async function createDeal(formData: FormData): Promise<FormResult> {
       contactId: formData.get("contactId") || undefined,
       expectedCloseDate: formData.get("expectedCloseDate") || undefined,
       notes: formData.get("notes") || undefined,
+      source: formData.get("source") || undefined,
     });
     const status = statusForStage(d.stage);
     await prisma.deal.create({
@@ -53,6 +55,7 @@ export async function createDeal(formData: FormData): Promise<FormResult> {
         expectedCloseDate: d.expectedCloseDate ? new Date(d.expectedCloseDate) : null,
         closedAt: status === "OPEN" ? null : new Date(),
         notes: d.notes || null,
+        source: d.source || null,
         ownerId: user.id,
       },
     });
@@ -63,8 +66,15 @@ export async function createDeal(formData: FormData): Promise<FormResult> {
 }
 
 export async function updateDeal(id: string, formData: FormData): Promise<FormResult> {
-  await requireUser();
+  const user = await requireUser();
   try {
+    const prev = await prisma.deal.findUniqueOrThrow({
+      where: { id },
+      select: { ownerId: true, status: true, closedAt: true },
+    });
+    if (prev.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ ویرایش این معامله را ندارید.");
+    }
     const d = schema.parse({
       title: formData.get("title"),
       value: parseAmount(String(formData.get("value") ?? "0")),
@@ -74,8 +84,12 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
       contactId: formData.get("contactId") || undefined,
       expectedCloseDate: formData.get("expectedCloseDate") || undefined,
       notes: formData.get("notes") || undefined,
+      source: formData.get("source") || undefined,
     });
     const status = statusForStage(d.stage);
+    // Preserve the original close date when a deal was already closed (don't reset on edits).
+    const closedAt =
+      status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
     await prisma.deal.update({
       where: { id },
       data: {
@@ -87,8 +101,9 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
         companyId: d.companyId || null,
         contactId: d.contactId || null,
         expectedCloseDate: d.expectedCloseDate ? new Date(d.expectedCloseDate) : null,
-        closedAt: status === "OPEN" ? null : new Date(),
+        closedAt,
         notes: d.notes || null,
+        source: d.source || null,
       },
     });
     revalidatePath("/deals");
@@ -101,13 +116,21 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
 export async function moveDealStage(id: string, stage: string) {
   const user = await requireUser();
   if (!STAGES.includes(stage as (typeof STAGES)[number])) return;
+  const prev = await prisma.deal.findUnique({
+    where: { id },
+    select: { ownerId: true, status: true, closedAt: true },
+  });
+  if (!prev) return;
+  if (prev.ownerId !== user.id && !canManageUsers(user.role)) return; // not permitted
   const status = statusForStage(stage);
+  const closedAt =
+    status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
   const deal = await prisma.deal.update({
     where: { id },
     data: {
       stage: stage as DealStage,
       status,
-      closedAt: status === "OPEN" ? null : new Date(),
+      closedAt,
     },
   });
   await prisma.activity.create({

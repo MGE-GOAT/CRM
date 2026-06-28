@@ -4,7 +4,7 @@ import { Plus, Pencil } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea, SubmitButton, ModalForm } from "@/components/ui/form";
 import { DateField } from "@/components/ui/date-field";
-import { stageLabel } from "@/lib/labels";
+import { stageLabel, DEAL_SOURCES } from "@/lib/labels";
 
 type Option = { id: string; name: string };
 
@@ -17,6 +17,7 @@ export type DealValues = {
   contactId: string | null;
   expectedCloseDate: string | null;
   notes: string | null;
+  source: string | null;
 };
 
 const STAGES = ["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"];
@@ -49,6 +50,7 @@ export function DealForm({
           <button
             onClick={open}
             className="rounded p-1 text-muted hover:bg-gray-50 hover:text-text"
+            aria-label="ویرایش معامله"
             title="ویرایش"
           >
             <Pencil size={14} />
@@ -121,6 +123,16 @@ export function DealForm({
               </Select>
             </Field>
           </div>
+          <Field label="منبع / کمپین">
+            <Select name="source" defaultValue={values?.source ?? ""}>
+              <option value="">— نامشخص —</option>
+              {DEAL_SOURCES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="یادداشت">
             <Textarea name="notes" rows={2} defaultValue={values?.notes ?? ""} />
           </Field>

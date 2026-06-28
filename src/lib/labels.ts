@@ -15,6 +15,18 @@ export const stageLabel: Record<string, string> = {
   LOST: "ناموفق",
 };
 
+// Marketing sources / campaigns for deal attribution.
+export const DEAL_SOURCES = [
+  "اینستاگرام",
+  "تماس سرد",
+  "معرفی مشتری",
+  "وب‌سایت",
+  "واتساپ",
+  "نمایشگاه",
+  "تبلیغات",
+  "سایر",
+];
+
 export const priorityLabel: Record<string, string> = {
   LOW: "کم",
   MEDIUM: "متوسط",

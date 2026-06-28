@@ -33,14 +33,17 @@ export function ChannelSidebar({
   const router = useRouter();
   const activeId = params?.channelId as string | undefined;
   const [, start] = useTransition();
+  const [dmError, setDmError] = useState<string | null>(null);
 
   const groups = channels.filter((c) => !c.isDirect);
   const dms = channels.filter((c) => c.isDirect);
 
   function openDm(userId: string) {
+    setDmError(null);
     start(async () => {
       const result = await startDirectMessage(userId);
       if (result.id) router.push(`/chat/${result.id}`);
+      else setDmError(result.error ?? "شروع گفتگو ناموفق بود.");
     });
   }
 
@@ -75,6 +78,11 @@ export function ChannelSidebar({
 
           <div className="mt-1 border-t border-border pt-2">
             <span className="px-2 text-xs text-muted">شروع گفتگو</span>
+            {dmError && (
+              <p role="alert" className="px-2 py-1 text-xs text-red-600">
+                {dmError}
+              </p>
+            )}
             {users.map((u) => (
               <button
                 key={u.id}

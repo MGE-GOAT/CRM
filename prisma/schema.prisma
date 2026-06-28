@@ -124,6 +124,7 @@ model Deal {
   expectedCloseDate DateTime?
   closedAt          DateTime?
   notes             String?
+  source            String?    // marketing source / campaign (for attribution)
 
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -283,6 +284,11 @@ model Reminder {
   messageBody String? // prefilled text for WhatsApp/SMS
   contactId   String?
   contact     Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  // SMS auto-send tracking (only relevant when action = SMS)
+  smsStatus   String? // null = not processed | "sent" | "failed" | "skipped"
+  smsSentAt   DateTime?
+  smsError    String?
 
   createdById String
   createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Cascade)

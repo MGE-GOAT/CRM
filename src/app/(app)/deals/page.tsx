@@ -79,6 +79,7 @@ export default async function DealsPage({
       contactId: d.contactId,
       expectedCloseDate: toDateInput(d.expectedCloseDate),
       notes: d.notes,
+      source: d.source,
     },
   }));
 

@@ -51,8 +51,12 @@ export async function createContact(formData: FormData): Promise<FormResult> {
 }
 
 export async function updateContact(id: string, formData: FormData): Promise<FormResult> {
-  await requireUser();
+  const user = await requireUser();
   try {
+    const rec = await prisma.contact.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
+    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ ویرایش این مخاطب را ندارید.");
+    }
     const data = parse(formData);
     await prisma.contact.update({
       where: { id },

@@ -10,6 +10,7 @@ import {
   CheckSquare,
   MessageSquare,
   CalendarDays,
+  BarChart3,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/contacts", label: "مخاطبین", icon: Users },
   { href: "/companies", label: "شرکت‌ها", icon: Building2 },
   { href: "/deals", label: "معاملات", icon: TrendingUp },
+  { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { href: "/tasks", label: "وظایف", icon: CheckSquare },
   { href: "/calendar", label: "تقویم", icon: CalendarDays },
   { href: "/chat", label: "گفتگوی تیمی", icon: MessageSquare },
@@ -37,7 +39,7 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
         <Logo width={140} />
       </div>
       <nav aria-label="منوی اصلی" className="flex-1 space-y-1 px-3 py-2">
-        {NAV.map(({ href, label, icon: Icon }) => (
+        {NAV.filter((n) => n.href !== "/reports" || canManageUsers).map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -58,6 +60,7 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
         <div className="border-t border-white/10 px-3 py-2">
           <Link
             href="/settings/users"
+            aria-current={pathname.startsWith("/settings") ? "page" : undefined}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
               pathname.startsWith("/settings")
@@ -65,7 +68,7 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
                 : "text-sidebar-text/80 hover:bg-sidebar-surface/60 hover:text-white"
             )}
           >
-            <Settings size={18} />
+            <Settings size={18} aria-hidden="true" />
             تیم و تنظیمات
           </Link>
         </div>

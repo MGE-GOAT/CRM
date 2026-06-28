@@ -53,7 +53,10 @@ export async function createTask(formData: FormData): Promise<FormResult> {
 }
 
 export async function toggleTask(id: string, completed: boolean) {
-  await requireUser();
+  const user = await requireUser();
+  const rec = await prisma.task.findUnique({ where: { id }, select: { assigneeId: true } });
+  if (!rec) return;
+  if (rec.assigneeId !== user.id && !canManageUsers(user.role)) return; // not permitted
   await prisma.task.update({ where: { id }, data: { completed } });
   revalidatePath("/tasks");
 }

@@ -31,6 +31,15 @@ export function toWhatsappNumber(phone: string): string {
   return d;
 }
 
+/** Normalize an Iranian mobile to local format (09xxxxxxxxx) for SMS gateways. */
+export function toLocalIranPhone(phone: string): string {
+  let d = toEn(phone).replace(/\D/g, "");
+  if (d.startsWith("0098")) d = d.slice(4);
+  else if (d.startsWith("98")) d = d.slice(2);
+  if (!d.startsWith("0")) d = "0" + d;
+  return d;
+}
+
 /** Format a number with Persian numerals and grouping (۱۲٬۵۰۰). */
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat(FA_LOCALE).format(n);

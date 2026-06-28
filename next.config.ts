@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// React/Turbopack dev mode needs eval() for debugging; production never does.
+const isDev = process.env.NODE_ENV !== "production";
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'";
+
 const nextConfig: NextConfig = {
   // Produces a self-contained server bundle in .next/standalone for Docker
   output: "standalone",
@@ -24,7 +30,8 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // Next.js injects inline bootstrap/hydration scripts and styles.
-              "script-src 'self' 'unsafe-inline'",
+              // 'unsafe-eval' is added only in dev (see scriptSrc above).
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data:",
               "font-src 'self'",

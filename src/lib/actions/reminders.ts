@@ -10,7 +10,7 @@ import { formError, type FormResult } from "@/lib/form-result";
 const schema = z.object({
   title: z.string().max(300).optional(),
   description: z.string().max(2000).optional(),
-  date: z.string().min(1, "تاریخ الزامی است"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "تاریخ معتبر وارد کنید"),
   time: z.string().optional(),
   isPublic: z.boolean(),
   color: z.string().max(20).optional(),

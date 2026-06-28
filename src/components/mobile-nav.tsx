@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/contacts", label: "مخاطبین" },
   { href: "/companies", label: "شرکت‌ها" },
   { href: "/deals", label: "معاملات" },
+  { href: "/reports", label: "گزارش‌ها" },
   { href: "/tasks", label: "وظایف" },
   { href: "/calendar", label: "تقویم" },
   { href: "/chat", label: "گفتگوی تیمی" },
@@ -19,13 +20,18 @@ const NAV = [
 
 export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
   const [open, setOpen] = useState(false);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+  const base = NAV.filter((n) => n.href !== "/reports" || canManageUsers);
   const items = canManageUsers
-    ? [...NAV, { href: "/settings/users", label: "تیم و تنظیمات" }]
-    : NAV;
+    ? [...base, { href: "/settings/users", label: "تیم و تنظیمات" }]
+    : base;
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   useEffect(() => {
     if (!open) return;
+    closeBtnRef.current?.focus(); // move focus into the dialog on open
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
@@ -57,7 +63,7 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <Logo width={120} />
-              <button onClick={() => setOpen(false)} aria-label="بستن منو">
+              <button ref={closeBtnRef} onClick={() => setOpen(false)} aria-label="بستن منو">
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
@@ -67,10 +73,10 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  aria-current={pathname === item.href ? "page" : undefined}
+                  aria-current={isActive(item.href) ? "page" : undefined}
                   className={cn(
                     "block rounded-lg px-3 py-2 text-sm font-medium",
-                    pathname === item.href
+                    isActive(item.href)
                       ? "bg-sidebar-surface text-[var(--gold-from)]"
                       : "text-sidebar-text/80 hover:bg-sidebar-surface/60"
                   )}

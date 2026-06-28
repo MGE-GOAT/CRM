@@ -51,8 +51,12 @@ export async function createCompany(formData: FormData): Promise<FormResult> {
 }
 
 export async function updateCompany(id: string, formData: FormData): Promise<FormResult> {
-  await requireUser();
+  const user = await requireUser();
   try {
+    const rec = await prisma.company.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
+    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ ویرایش این شرکت را ندارید.");
+    }
     const d = parse(formData);
     await prisma.company.update({
       where: { id },

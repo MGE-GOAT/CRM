@@ -7,7 +7,7 @@ import { StageBadge } from "@/components/ui/badge";
 import { LogActivity } from "@/components/log-activity";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { safeUrl } from "@/lib/utils";
-import { formatToman } from "@/lib/format";
+import { formatToman, formatNumber, toFa } from "@/lib/format";
 
 export default async function CompanyDetailPage({
   params,
@@ -29,6 +29,18 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound();
 
+  const openValue = company.deals
+    .filter((d) => d.status === "OPEN")
+    .reduce((s, d) => s + Number(d.value), 0);
+  const wonValue = company.deals
+    .filter((d) => d.status === "WON")
+    .reduce((s, d) => s + Number(d.value), 0);
+  const summary = [
+    { label: "مخاطبین", value: formatNumber(company.contacts.length) },
+    { label: "معاملات باز", value: formatToman(openValue) },
+    { label: "درآمد موفق", value: formatToman(wonValue) },
+  ];
+
   return (
     <div className="p-4 sm:p-6">
       <Link
@@ -38,21 +50,32 @@ export default async function CompanyDetailPage({
         <ArrowRight size={16} /> بازگشت به شرکت‌ها
       </Link>
 
+      {/* 360° summary */}
+      <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+        {summary.map((s) => (
+          <div key={s.label} className="rounded-xl border border-border bg-surface p-3 text-center sm:p-4">
+            <div className="text-sm font-bold leading-tight tabular-nums sm:text-xl">{s.value}</div>
+            <div className="mt-0.5 text-xs text-muted">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-surface p-5">
             <h1 className="text-lg font-bold">{company.name}</h1>
             <p className="text-sm text-muted">{company.industry ?? "—"}</p>
 
-            <dl className="mt-5 space-y-3 text-sm">
+            <div className="mt-5 space-y-3 text-sm">
               {safeUrl(company.website) && (
                 <div className="flex items-center gap-2">
-                  <Globe size={15} className="text-muted" />
+                  <Globe size={15} className="shrink-0 text-muted" />
                   <a
+                    dir="ltr"
                     href={safeUrl(company.website)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-[var(--brand)]"
+                    className="truncate hover:text-[var(--brand)]"
                   >
                     {company.website}
                   </a>
@@ -60,17 +83,17 @@ export default async function CompanyDetailPage({
               )}
               {company.phone && (
                 <div className="flex items-center gap-2">
-                  <Phone size={15} className="text-muted" />
-                  {company.phone}
+                  <Phone size={15} className="shrink-0 text-muted" />
+                  <span dir="ltr">{toFa(company.phone)}</span>
                 </div>
               )}
               {company.address && (
                 <div className="flex items-center gap-2">
-                  <MapPin size={15} className="text-muted" />
+                  <MapPin size={15} className="shrink-0 text-muted" />
                   {company.address}
                 </div>
               )}
-            </dl>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-surface p-5">

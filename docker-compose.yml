@@ -46,6 +46,12 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      # SMS (Melipayamak classic web service) — leave empty to disable SMS sending.
+      MELIPAYAMAK_USERNAME: ${MELIPAYAMAK_USERNAME:-}
+      MELIPAYAMAK_PASSWORD: ${MELIPAYAMAK_PASSWORD:-}
+      MELIPAYAMAK_SENDER: ${MELIPAYAMAK_SENDER:-}
+      # Secret guarding the SMS cron endpoint (/api/cron/send-sms).
+      CRON_SECRET: ${CRON_SECRET:-}
     ports:
       # Bound to loopback only — the public reaches the app through Nginx/HTTPS,
       # never directly (Docker would otherwise bypass the host firewall).

@@ -29,7 +29,7 @@ function assertCanManageRole(callerRole: Role, targetRole: Role, nextRole?: Role
   if (callerRole === "OWNER") return;
   // caller is ADMIN
   if (targetRole === "OWNER" || nextRole === "OWNER") {
-    throw new Error("Only an owner can manage owner accounts.");
+    throw new Error("فقط مالک می‌تواند حساب‌های مالک را مدیریت کند.");
   }
 }
 
@@ -43,7 +43,7 @@ async function assertNotLastOwner(targetId: string) {
     where: { role: "OWNER", isActive: true },
   });
   if (activeOwners <= 1) {
-    throw new Error("Cannot remove or disable the last owner.");
+    throw new Error("نمی‌توان آخرین مالک را حذف یا غیرفعال کرد.");
   }
 }
 
@@ -82,7 +82,7 @@ export async function updateUserRole(id: string, role: string) {
   const caller = await requireRole("OWNER", "ADMIN");
   const nextRole = roleSchema.parse(role);
 
-  if (id === caller.id) throw new Error("You can't change your own role.");
+  if (id === caller.id) throw new Error("نمی‌توانید نقش خود را تغییر دهید.");
 
   const target = await prisma.user.findUniqueOrThrow({
     where: { id },
@@ -101,7 +101,7 @@ export async function updateUserRole(id: string, role: string) {
 
 export async function toggleUserActive(id: string) {
   const caller = await requireRole("OWNER", "ADMIN");
-  if (id === caller.id) throw new Error("You can't disable your own account.");
+  if (id === caller.id) throw new Error("نمی‌توانید حساب خود را غیرفعال کنید.");
 
   const target = await prisma.user.findUniqueOrThrow({
     where: { id },
