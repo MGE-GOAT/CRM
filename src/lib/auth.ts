@@ -25,6 +25,15 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+// Current bcrypt cost. DUMMY_HASH MUST use this same cost so a real compare and
+// the no-such-user compare take the same time (timing-equalizer correctness).
+const BCRYPT_COST = 12;
+
+// A valid cost-12 bcrypt hash used to equalize response time when the account
+// doesn't exist or is disabled, so an attacker can't distinguish "no such user"
+// from "wrong password" by timing (user-enumeration side-channel).
+const DUMMY_HASH = "$2b$12$TZ9zPnhtOz/WAvIDdrKob.qMWVOqwphmEcCNZbi.S0XGT9yVDzZr6";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -41,10 +50,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: email.toLowerCase() },
         });
-        if (!user || !user.isActive) return null;
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        // Always run a bcrypt compare (against a dummy hash when there's no
+        // active user) so the response time is the same whether or not the
+        // account exists — defeats user enumeration by timing.
+        const hash = user && user.isActive ? user.passwordHash : DUMMY_HASH;
+        const valid = await bcrypt.compare(password, hash);
+        if (!user || !user.isActive || !valid) return null;
+
+        // Transparently upgrade any legacy lower-cost hash (e.g. the cost-10
+        // seed / bootstrap admin) to the current cost. This keeps real-login
+        // timing matched to the cost-12 dummy hash and strengthens stored
+        // hashes over time. A rehash failure must never block a valid login.
+        try {
+          if (bcrypt.getRounds(user.passwordHash) < BCRYPT_COST) {
+            const upgraded = await bcrypt.hash(password, BCRYPT_COST);
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { passwordHash: upgraded },
+            });
+          }
+        } catch {
+          /* ignore — login already validated */
+        }
 
         return {
           id: user.id,

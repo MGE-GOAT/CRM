@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
-import { authenticate } from "@/lib/actions/auth-actions";
+import { authenticate, refreshCaptcha } from "@/lib/actions/auth-actions";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -17,8 +17,27 @@ function SubmitButton() {
   );
 }
 
+const inputClass =
+  "mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-left outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20";
+
 export function LoginForm() {
-  const [error, formAction] = useActionState(authenticate, undefined);
+  const [state, formAction] = useActionState(authenticate, undefined);
+  const [captcha, setCaptcha] = useState<{ image: string; token: string } | null>(null);
+  const [isRefreshing, startRefresh] = useTransition();
+
+  // Show / refresh the CAPTCHA whenever the server says one is required.
+  useEffect(() => {
+    if (state?.captchaRequired && state.captchaImage && state.captchaToken) {
+      setCaptcha({ image: state.captchaImage, token: state.captchaToken });
+    }
+  }, [state]);
+
+  function handleRefresh() {
+    startRefresh(async () => {
+      const next = await refreshCaptcha();
+      setCaptcha(next);
+    });
+  }
 
   return (
     <form action={formAction} className="space-y-4">
@@ -33,7 +52,7 @@ export function LoginForm() {
           required
           autoComplete="email"
           dir="ltr"
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-left outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20"
+          className={inputClass}
           placeholder="you@company.com"
         />
       </div>
@@ -48,14 +67,66 @@ export function LoginForm() {
           required
           autoComplete="current-password"
           dir="ltr"
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-left outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20"
+          className={inputClass}
           placeholder="••••••••"
         />
       </div>
 
-      {error && (
+      {/* Honeypot: invisible to humans; bots that auto-fill every field trip it. */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+        <label htmlFor="company_website">Company website</label>
+        <input
+          id="company_website"
+          name="company_website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
+      {captcha && (
+        <div>
+          <label htmlFor="captcha" className="block text-sm font-medium">
+            کد امنیتی تصویر را وارد کنید
+          </label>
+          <div className="mt-1 flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={captcha.image}
+              alt="کد امنیتی"
+              width={170}
+              height={56}
+              className="rounded-lg border border-border"
+            />
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              aria-label="تصویر جدید"
+              className="rounded-lg border border-border px-2.5 py-2 text-sm text-muted hover:bg-surface disabled:opacity-50"
+            >
+              ⟳
+            </button>
+          </div>
+          <input type="hidden" name="captchaToken" value={captcha.token} />
+          <input
+            id="captcha"
+            name="captcha"
+            type="text"
+            required
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            dir="ltr"
+            className={inputClass}
+            placeholder="مثلاً 7XK2P"
+          />
+        </div>
+      )}
+
+      {state?.error && (
         <p role="alert" aria-live="assertive" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
+          {state.error}
         </p>
       )}
 

@@ -26,7 +26,7 @@ async function main() {
     });
     console.log(`[bootstrap] Admin exists; password left unchanged: ${email}`);
   } else {
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     await prisma.user.create({
       data: { email, name, passwordHash, role: "OWNER", avatarColor: "#6366f1" },
     });

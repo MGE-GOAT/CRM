@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 در حال مقداردهی اولیه پایگاه داده...");
 
-  const password = await bcrypt.hash("password123", 10);
+  const password = await bcrypt.hash("password123", 12);
 
   // --- کاربران ---
   const admin = await prisma.user.upsert({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Select, Textarea, SubmitButton } from "@/components/ui/form";
 import { logActivity } from "@/lib/actions/activities";
 
@@ -14,12 +14,18 @@ export function LogActivity({
   dealId?: string;
 }) {
   const ref = useRef<HTMLFormElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       ref={ref}
       action={async (fd) => {
-        await logActivity(fd);
+        setError(null);
+        const result = await logActivity(fd);
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
         ref.current?.reset();
       }}
       className="space-y-3 rounded-xl border border-border bg-surface p-4"
@@ -42,6 +48,11 @@ export function LogActivity({
         </Select>
         <SubmitButton>ثبت فعالیت</SubmitButton>
       </div>
+      {error && (
+        <p role="alert" aria-live="assertive" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

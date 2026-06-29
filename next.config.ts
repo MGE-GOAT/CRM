@@ -9,6 +9,8 @@ const scriptSrc = isDev
 const nextConfig: NextConfig = {
   // Produces a self-contained server bundle in .next/standalone for Docker
   output: "standalone",
+  // Don't advertise the framework via the default X-Powered-By header.
+  poweredByHeader: false,
   async headers() {
     return [
       {

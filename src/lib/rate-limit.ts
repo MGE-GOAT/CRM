@@ -40,3 +40,51 @@ if (typeof setInterval !== "undefined") {
     }
   }, 10 * 60 * 1000).unref?.();
 }
+
+// --- Failure counters (used to decide when the adaptive CAPTCHA appears) ---
+
+const counters = new Map<string, Entry>();
+
+/** Read the current count for a key without changing it (0 if none/expired). */
+export function peekCounter(key: string): number {
+  const e = counters.get(key);
+  if (!e || Date.now() > e.resetAt) return 0;
+  return e.count;
+}
+
+/** Increment a key's counter within a rolling window and return the new count. */
+export function bumpCounter(key: string, windowMs: number): number {
+  const now = Date.now();
+  const e = counters.get(key);
+  if (!e || now > e.resetAt) {
+    counters.set(key, { count: 1, resetAt: now + windowMs });
+    return 1;
+  }
+  e.count += 1;
+  return e.count;
+}
+
+/** Clear a key's counter (e.g. after a successful login). */
+export function resetCounter(key: string): void {
+  counters.delete(key);
+}
+
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of counters) {
+      if (now > entry.resetAt) counters.delete(key);
+    }
+  }, 10 * 60 * 1000).unref?.();
+}
+
+/**
+ * Defense-in-depth guard for authenticated server-action mutations. Throws a
+ * user-friendly Persian error when the caller exceeds `max` calls in `windowMs`,
+ * which the actions' try/catch turns into a returned { error } via formError().
+ */
+export function enforceRateLimit(key: string, max: number, windowMs: number): void {
+  if (!checkRateLimit(key, max, windowMs).allowed) {
+    throw new Error("تعداد درخواست‌ها بیش از حد مجاز است. کمی بعد دوباره تلاش کنید.");
+  }
+}

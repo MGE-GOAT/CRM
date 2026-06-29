@@ -5,10 +5,13 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function sendMessage(channelId: string, formData: FormData): Promise<FormResult> {
   const user = await requireUser();
   try {
+    // Anti-spam: cap messages per user per minute.
+    enforceRateLimit(`chat:send:${user.id}`, 30, 60 * 1000);
     const body = z
       .string()
       .min(1, "متن پیام خالی است")

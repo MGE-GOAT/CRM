@@ -7,6 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { Role } from "@prisma/client";
 import { formError, type FormResult } from "@/lib/form-result";
+import { enforceRateLimit } from "@/lib/rate-limit";
+
+// Cost factor for new password hashes (existing lower-cost hashes still verify).
+const BCRYPT_COST = 12;
 
 const PALETTE = ["#6366f1", "#ec4899", "#10b981", "#f59e0b", "#0ea5e9", "#8b5cf6", "#ef4444"];
 
@@ -50,6 +54,7 @@ async function assertNotLastOwner(targetId: string) {
 export async function createUser(formData: FormData): Promise<FormResult> {
   const caller = await requireRole("OWNER", "ADMIN");
   try {
+    enforceRateLimit(`users:create:${caller.id}`, 20, 60 * 1000);
     const d = createSchema.parse({
       name: formData.get("name"),
       email: String(formData.get("email") ?? "").toLowerCase().trim(),
@@ -62,7 +67,7 @@ export async function createUser(formData: FormData): Promise<FormResult> {
     const existing = await prisma.user.findUnique({ where: { email: d.email } });
     if (existing) throw new Error("کاربری با این ایمیل قبلاً ثبت شده است.");
 
-    const passwordHash = await bcrypt.hash(d.password, 10);
+    const passwordHash = await bcrypt.hash(d.password, BCRYPT_COST);
     await prisma.user.create({
       data: {
         name: d.name,
@@ -122,6 +127,7 @@ export async function toggleUserActive(id: string) {
 export async function resetUserPassword(id: string, formData: FormData): Promise<FormResult> {
   const caller = await requireRole("OWNER", "ADMIN");
   try {
+    enforceRateLimit(`users:resetpw:${caller.id}`, 20, 60 * 1000);
     const password = passwordSchema.parse(formData.get("password"));
 
     const target = await prisma.user.findUniqueOrThrow({
@@ -130,7 +136,7 @@ export async function resetUserPassword(id: string, formData: FormData): Promise
     });
     assertCanManageRole(caller.role, target.role);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
     await prisma.user.update({ where: { id }, data: { passwordHash } });
     revalidatePath("/settings/users");
   } catch (e) {
