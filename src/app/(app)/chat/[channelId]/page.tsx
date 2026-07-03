@@ -86,7 +86,7 @@ export default async function ChannelPage({
         </div>
       </div>
 
-      <ChatThread channelId={channelId} currentUserId={user.id} messages={messages} />
+      <ChatThread key={channelId} channelId={channelId} currentUserId={user.id} messages={messages} />
     </div>
   );
 }

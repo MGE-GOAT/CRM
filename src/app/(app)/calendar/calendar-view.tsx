@@ -220,7 +220,7 @@ export function CalendarView({
             r={modal.reminder}
             onEdit={() => setModal({ type: "edit", reminder: modal.reminder })}
             onClose={() => setModal({ type: "none" })}
-            onToggle={() => start(() => toggleReminderDone(modal.reminder.id, !modal.reminder.done))}
+            onToggle={() => start(() => { void toggleReminderDone(modal.reminder.id, !modal.reminder.done); })}
             onDelete={() => start(async () => { await deleteReminder(modal.reminder.id); setModal({ type: "none" }); })}
           />
         </Overlay>

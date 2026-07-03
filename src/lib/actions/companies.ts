@@ -81,15 +81,19 @@ export async function updateCompany(id: string, formData: FormData): Promise<For
   }
 }
 
-export async function deleteCompany(id: string) {
+export async function deleteCompany(id: string): Promise<FormResult> {
   const user = await requireUser();
-  const rec = await prisma.company.findUniqueOrThrow({
-    where: { id },
-    select: { ownerId: true },
-  });
-  if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-    throw new Error("اجازهٔ حذف این شرکت را ندارید.");
+  try {
+    const rec = await prisma.company.findUniqueOrThrow({
+      where: { id },
+      select: { ownerId: true },
+    });
+    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ حذف این شرکت را ندارید.");
+    }
+    await prisma.company.delete({ where: { id } });
+    revalidatePath("/companies");
+  } catch (e) {
+    return formError(e);
   }
-  await prisma.company.delete({ where: { id } });
-  revalidatePath("/companies");
 }

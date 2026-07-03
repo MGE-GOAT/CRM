@@ -10,6 +10,19 @@ type Entry = { count: number; resetAt: number };
 
 const buckets = new Map<string, Entry>();
 
+// Absolute cap so a flood keyed by attacker-controlled values (e.g. unique
+// emails) can never grow a map unbounded and exhaust RAM. Maps are insertion-
+// ordered, so evicting the first keys drops the oldest entries.
+const MAX_ENTRIES = 20_000;
+function evictOldest(map: Map<string, Entry>): void {
+  if (map.size < MAX_ENTRIES) return;
+  let n = Math.ceil(MAX_ENTRIES * 0.1);
+  for (const k of map.keys()) {
+    map.delete(k);
+    if (--n <= 0) break;
+  }
+}
+
 export function checkRateLimit(
   key: string,
   max: number,
@@ -19,6 +32,7 @@ export function checkRateLimit(
   const entry = buckets.get(key);
 
   if (!entry || now > entry.resetAt) {
+    evictOldest(buckets);
     buckets.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, remaining: max - 1 };
   }
@@ -57,6 +71,7 @@ export function bumpCounter(key: string, windowMs: number): number {
   const now = Date.now();
   const e = counters.get(key);
   if (!e || now > e.resetAt) {
+    evictOldest(counters);
     counters.set(key, { count: 1, resetAt: now + windowMs });
     return 1;
   }

@@ -8,26 +8,44 @@ export function ConfirmDelete({
   label = "حذف",
   iconOnly = false,
 }: {
-  onDelete: () => Promise<void>;
+  onDelete: () => Promise<{ error?: string } | void>;
   label?: string;
   iconOnly?: boolean;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   if (confirming) {
     return (
       <span className="inline-flex items-center gap-1 text-xs">
-        <span className="text-muted">مطمئنید؟</span>
+        {error ? (
+          <span className="text-red-600">{error}</span>
+        ) : (
+          <span className="text-muted">مطمئنید؟</span>
+        )}
         <button
-          onClick={() => start(() => onDelete())}
+          onClick={() =>
+            start(async () => {
+              setError(null);
+              const res = await onDelete();
+              if (res?.error) {
+                setError(res.error);
+                return;
+              }
+              setConfirming(false);
+            })
+          }
           disabled={pending}
           className="rounded px-2 py-1 font-medium text-red-600 hover:bg-red-50"
         >
           {pending ? "…" : "بله"}
         </button>
         <button
-          onClick={() => setConfirming(false)}
+          onClick={() => {
+            setConfirming(false);
+            setError(null);
+          }}
           className="rounded px-2 py-1 text-muted hover:bg-gray-50"
         >
           خیر

@@ -103,16 +103,24 @@ export async function updateReminder(id: string, formData: FormData): Promise<Fo
   }
 }
 
-export async function toggleReminderDone(id: string, done: boolean) {
+export async function toggleReminderDone(id: string, done: boolean): Promise<FormResult> {
   const user = await requireUser();
-  await assertCanEdit(id, user.id, user.role);
-  await prisma.reminder.update({ where: { id }, data: { done } });
-  revalidatePath("/calendar");
+  try {
+    await assertCanEdit(id, user.id, user.role);
+    await prisma.reminder.update({ where: { id }, data: { done } });
+    revalidatePath("/calendar");
+  } catch (e) {
+    return formError(e);
+  }
 }
 
-export async function deleteReminder(id: string) {
+export async function deleteReminder(id: string): Promise<FormResult> {
   const user = await requireUser();
-  await assertCanEdit(id, user.id, user.role);
-  await prisma.reminder.delete({ where: { id } });
-  revalidatePath("/calendar");
+  try {
+    await assertCanEdit(id, user.id, user.role);
+    await prisma.reminder.delete({ where: { id } });
+    revalidatePath("/calendar");
+  } catch (e) {
+    return formError(e);
+  }
 }

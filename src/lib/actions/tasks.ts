@@ -61,15 +61,19 @@ export async function toggleTask(id: string, completed: boolean) {
   revalidatePath("/tasks");
 }
 
-export async function deleteTask(id: string) {
+export async function deleteTask(id: string): Promise<FormResult> {
   const user = await requireUser();
-  const rec = await prisma.task.findUniqueOrThrow({
-    where: { id },
-    select: { assigneeId: true },
-  });
-  if (rec.assigneeId !== user.id && !canManageUsers(user.role)) {
-    throw new Error("اجازهٔ حذف این وظیفه را ندارید.");
+  try {
+    const rec = await prisma.task.findUniqueOrThrow({
+      where: { id },
+      select: { assigneeId: true },
+    });
+    if (rec.assigneeId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ حذف این وظیفه را ندارید.");
+    }
+    await prisma.task.delete({ where: { id } });
+    revalidatePath("/tasks");
+  } catch (e) {
+    return formError(e);
   }
-  await prisma.task.delete({ where: { id } });
-  revalidatePath("/tasks");
 }

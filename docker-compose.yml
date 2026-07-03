@@ -1,11 +1,21 @@
+# Shared log rotation so container logs can't fill the disk (json-file is
+# unbounded by default). Applied to every service via the *default-logging anchor.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: crm
       POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       POSTGRES_DB: crm
+      TZ: Asia/Tehran
     volumes:
       # Postgres 18 images store data in a subdir of /var/lib/postgresql
       - crm_db_data:/var/lib/postgresql
@@ -21,8 +31,12 @@ services:
   app:
     build: .
     restart: unless-stopped
+    logging: *default-logging
     labels:
       autoheal: "true"
+    # Cap RAM so a runaway (e.g. a request flood) restarts THIS container cleanly
+    # instead of OOM-killing Postgres / the host. Tune to the VPS; leave headroom.
+    mem_limit: 768m
     healthcheck:
       # Node 24 has global fetch; restarts the app if it hangs (not just crashes).
       test:
@@ -42,6 +56,9 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
       AUTH_TRUST_HOST: "true"
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      # Server timezone — must match the users' locale (Iran) so Jalali dates,
+      # reminder/SMS times and "today" highlighting are computed correctly.
+      TZ: Asia/Tehran
       # First-run admin (idempotent). Set these in your .env.
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
@@ -57,10 +74,28 @@ services:
       # never directly (Docker would otherwise bypass the host firewall).
       - "127.0.0.1:3000:3000"
 
+  # Scheduler: pings the SMS endpoint every minute so due reminders actually send.
+  # Reaches the app over the internal compose network (not the public port).
+  # No-ops harmlessly (401) until CRON_SECRET is set in .env.
+  cron:
+    image: curlimages/curl:8.11.1
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'while true; do curl -fsS -m 20 -X POST -H "x-cron-secret: $${CRON_SECRET}" http://app:3000/api/cron/send-sms >/dev/null 2>&1 || true; sleep 60; done'
+
   # Restarts any container marked unhealthy (e.g. a hung app) automatically.
   autoheal:
     image: willfarrell/autoheal:latest
     restart: unless-stopped
+    logging: *default-logging
     environment:
       AUTOHEAL_CONTAINER_LABEL: autoheal
     volumes:

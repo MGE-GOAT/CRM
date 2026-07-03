@@ -39,7 +39,7 @@ export function ActivityTimeline({ activities }: { activities: Activity[] }) {
                 <Icon size={15} />
               </span>
             </div>
-            <div className="flex-1 pt-0.5 text-sm">
+            <div className="min-w-0 flex-1 pt-0.5 text-sm">
               <p>
                 <span className="font-medium">{a.user.name}</span>{" "}
                 <span className="text-muted">
@@ -48,7 +48,7 @@ export function ActivityTimeline({ activities }: { activities: Activity[] }) {
                     : `· ${activityTypeLabel[a.type] ?? a.type}`}
                 </span>
               </p>
-              {a.type !== "STAGE_CHANGE" && <p className="mt-0.5">{a.content}</p>}
+              {a.type !== "STAGE_CHANGE" && <p className="mt-0.5 break-words">{a.content}</p>}
               <p className="mt-0.5 text-xs text-muted">{formatRelative(a.createdAt)}</p>
             </div>
             <Avatar name={a.user.name} color={a.user.avatarColor} size={26} />

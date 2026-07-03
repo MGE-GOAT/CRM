@@ -81,33 +81,42 @@ export async function updateContact(id: string, formData: FormData): Promise<For
   }
 }
 
-export async function deleteContact(id: string) {
+export async function deleteContact(id: string): Promise<FormResult> {
   const user = await requireUser();
-  const rec = await prisma.contact.findUniqueOrThrow({
-    where: { id },
-    select: { ownerId: true },
-  });
-  if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-    throw new Error("اجازهٔ حذف این مخاطب را ندارید.");
+  try {
+    const rec = await prisma.contact.findUniqueOrThrow({
+      where: { id },
+      select: { ownerId: true },
+    });
+    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ حذف این مخاطب را ندارید.");
+    }
+    await prisma.contact.delete({ where: { id } });
+    revalidatePath("/contacts");
+  } catch (e) {
+    return formError(e);
   }
-  await prisma.contact.delete({ where: { id } });
-  revalidatePath("/contacts");
 }
 
-export async function duplicateContact(id: string) {
+export async function duplicateContact(id: string): Promise<FormResult> {
   const user = await requireUser();
-  const src = await prisma.contact.findUniqueOrThrow({ where: { id } });
-  await prisma.contact.create({
-    data: {
-      firstName: src.firstName,
-      lastName: `${src.lastName} (کپی)`,
-      email: src.email,
-      phone: src.phone,
-      title: src.title,
-      notes: src.notes,
-      companyId: src.companyId,
-      ownerId: user.id,
-    },
-  });
-  revalidatePath("/contacts");
+  try {
+    const src = await prisma.contact.findUniqueOrThrow({ where: { id } });
+    await prisma.contact.create({
+      data: {
+        firstName: src.firstName,
+        lastName: `${src.lastName} (کپی)`,
+        email: src.email,
+        phone: src.phone,
+        title: src.title,
+        senf: src.senf,
+        notes: src.notes,
+        companyId: src.companyId,
+        ownerId: user.id,
+      },
+    });
+    revalidatePath("/contacts");
+  } catch (e) {
+    return formError(e);
+  }
 }

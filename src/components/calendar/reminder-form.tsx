@@ -44,7 +44,11 @@ export function ReminderForm({
       action={async (fd) => {
         setError(null);
         try {
-          await action(fd);
+          const res = await action(fd);
+          if (res?.error) {
+            setError(res.error);
+            return;
+          }
           onDone();
         } catch (e) {
           setError(e instanceof Error ? e.message : "خطایی رخ داد.");

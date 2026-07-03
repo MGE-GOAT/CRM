@@ -90,6 +90,8 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
     // Preserve the original close date when a deal was already closed (don't reset on edits).
     const closedAt =
       status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
+    // Keep probability consistent with the stage (WON = 100%, LOST = 0%).
+    const probability = status === "WON" ? 100 : status === "LOST" ? 0 : d.probability;
     await prisma.deal.update({
       where: { id },
       data: {
@@ -97,7 +99,7 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
         value: d.value,
         stage: d.stage as DealStage,
         status,
-        probability: d.probability,
+        probability,
         companyId: d.companyId || null,
         contactId: d.contactId || null,
         expectedCloseDate: d.expectedCloseDate ? new Date(d.expectedCloseDate) : null,
@@ -112,47 +114,60 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
   }
 }
 
-/** Used by the Kanban board drag-to-stage. */
-export async function moveDealStage(id: string, stage: string) {
+/** Used by the Kanban board drag-to-stage. Returns { error } so the client can
+ *  roll back the optimistic move when the server rejects it. */
+export async function moveDealStage(id: string, stage: string): Promise<{ error?: string } | void> {
   const user = await requireUser();
-  if (!STAGES.includes(stage as (typeof STAGES)[number])) return;
-  const prev = await prisma.deal.findUnique({
-    where: { id },
-    select: { ownerId: true, status: true, closedAt: true },
-  });
-  if (!prev) return;
-  if (prev.ownerId !== user.id && !canManageUsers(user.role)) return; // not permitted
-  const status = statusForStage(stage);
-  const closedAt =
-    status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
-  const deal = await prisma.deal.update({
-    where: { id },
-    data: {
-      stage: stage as DealStage,
-      status,
-      closedAt,
-    },
-  });
-  await prisma.activity.create({
-    data: {
-      type: "STAGE_CHANGE",
-      content: `moved this deal to ${stage.charAt(0) + stage.slice(1).toLowerCase()}`,
-      userId: user.id,
-      dealId: deal.id,
-    },
-  });
-  revalidatePath("/deals");
+  if (!STAGES.includes(stage as (typeof STAGES)[number])) return { error: "مرحلهٔ نامعتبر." };
+  try {
+    const prev = await prisma.deal.findUnique({
+      where: { id },
+      select: { ownerId: true, status: true, closedAt: true },
+    });
+    if (!prev) return { error: "معامله یافت نشد." };
+    if (prev.ownerId !== user.id && !canManageUsers(user.role)) {
+      return { error: "اجازهٔ جابجایی این معامله را ندارید." };
+    }
+    const status = statusForStage(stage);
+    const closedAt =
+      status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
+    const deal = await prisma.deal.update({
+      where: { id },
+      data: {
+        stage: stage as DealStage,
+        status,
+        closedAt,
+        // Keep probability consistent with the stage.
+        ...(status !== "OPEN" ? { probability: status === "WON" ? 100 : 0 } : {}),
+      },
+    });
+    await prisma.activity.create({
+      data: {
+        type: "STAGE_CHANGE",
+        content: `moved this deal to ${stage.charAt(0) + stage.slice(1).toLowerCase()}`,
+        userId: user.id,
+        dealId: deal.id,
+      },
+    });
+    revalidatePath("/deals");
+  } catch (e) {
+    return formError(e);
+  }
 }
 
-export async function deleteDeal(id: string) {
+export async function deleteDeal(id: string): Promise<FormResult> {
   const user = await requireUser();
-  const rec = await prisma.deal.findUniqueOrThrow({
-    where: { id },
-    select: { ownerId: true },
-  });
-  if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-    throw new Error("اجازهٔ حذف این معامله را ندارید.");
+  try {
+    const rec = await prisma.deal.findUniqueOrThrow({
+      where: { id },
+      select: { ownerId: true },
+    });
+    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
+      throw new Error("اجازهٔ حذف این معامله را ندارید.");
+    }
+    await prisma.deal.delete({ where: { id } });
+    revalidatePath("/deals");
+  } catch (e) {
+    return formError(e);
   }
-  await prisma.deal.delete({ where: { id } });
-  revalidatePath("/deals");
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, SubmitButton, Select, ModalForm } from "@/components/ui/form";
@@ -16,13 +17,23 @@ export function RoleSelect({
   disabled: boolean;
 }) {
   const [pending, start] = useTransition();
+  const [value, setValue] = useState(role);
   return (
     <Select
-      defaultValue={role}
+      value={value}
       disabled={disabled || pending}
       onChange={(e) => {
-        const value = e.target.value;
-        start(() => updateUserRole(userId, value));
+        const next = e.target.value;
+        const prev = value;
+        setValue(next);
+        start(async () => {
+          const res = await updateUserRole(userId, next);
+          // Revert the select if the server rejected the change.
+          if (res?.error) {
+            setValue(prev);
+            alert(res.error);
+          }
+        });
       }}
       className="w-32"
     >
@@ -43,10 +54,19 @@ export function ActiveToggle({
   disabled: boolean;
 }) {
   const [pending, start] = useTransition();
+  const router = useRouter();
   return (
     <button
       disabled={disabled || pending}
-      onClick={() => start(() => toggleUserActive(userId))}
+      onClick={() =>
+        start(async () => {
+          const res = await toggleUserActive(userId);
+          if (res?.error) {
+            alert(res.error);
+            router.refresh();
+          }
+        })
+      }
       className={`rounded-full px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
         isActive
           ? "bg-green-50 text-green-700 hover:bg-green-100"

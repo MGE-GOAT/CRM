@@ -7,13 +7,13 @@ export function DuplicateButton({
   onDuplicate,
   label = "تکثیر",
 }: {
-  onDuplicate: () => Promise<void>;
+  onDuplicate: () => Promise<{ error?: string } | void>;
   label?: string;
 }) {
   const [pending, start] = useTransition();
   return (
     <button
-      onClick={() => start(() => onDuplicate())}
+      onClick={() => start(() => { void onDuplicate(); })}
       disabled={pending}
       aria-label={label}
       title={label}

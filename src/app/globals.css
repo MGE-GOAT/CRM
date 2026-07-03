@@ -134,11 +134,18 @@ body {
   }
   .print-invoice {
     position: absolute;
-    inset: 0;
-    margin: 0 !important;
+    top: 0;
+    left: 0;
     width: 100%;
+    /* No inset/bottom → height grows with content instead of clipping to one page. */
+    height: auto;
+    margin: 0 !important;
     border: 0 !important;
     padding: 0 !important;
+  }
+  /* Don't split a table row across a page break. */
+  .print-invoice tr {
+    break-inside: avoid;
   }
   .no-print {
     display: none !important;

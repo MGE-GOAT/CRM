@@ -63,16 +63,9 @@ export async function authenticate(
   // Per-email failure tally across all IPs — escalates to CAPTCHA on IP rotation.
   const emailFailKey = `login:failmail:${email}`;
 
-  // Honeypot: a hidden field no human fills. If populated, it's a bot — fail
-  // generically without touching the auth path or leaking that it was detected.
-  if (String(formData.get("company_website") ?? "").length > 0) {
-    bumpCounter(failKey, FAIL_WINDOW);
-    if (email) bumpCounter(emailFailKey, FAIL_WINDOW);
-    console.warn(`[security] login honeypot tripped ip=${ip}`);
-    return challenge({ error: "ایمیل یا گذرواژه نادرست است." });
-  }
-
-  // Two HARD ceilings, both per-IP so they can never lock out a remote user:
+  // Two HARD ceilings FIRST, both per-IP so they can never lock out a remote
+  // user AND so a flood from one IP is rejected here before it can bump the
+  // adaptive counters (protects the honeypot path from unbounded counter growth):
   // targeted brute force (per IP+email) and password spraying (per IP).
   const ipOk = checkRateLimit(`login:ip:${ip}`, PER_IP_MAX, PER_IP_WINDOW);
   const emailOk = checkRateLimit(`login:${ip}:${email}`, PER_EMAIL_MAX, PER_EMAIL_WINDOW);
@@ -81,6 +74,15 @@ export async function authenticate(
     return challenge({
       error: "تلاش‌های بیش از حد. لطفاً چند دقیقه صبر کنید و دوباره امتحان کنید.",
     });
+  }
+
+  // Honeypot: a hidden field no human fills. If populated, it's a bot — fail
+  // generically without touching the auth path or leaking that it was detected.
+  if (String(formData.get("company_website") ?? "").length > 0) {
+    bumpCounter(failKey, FAIL_WINDOW);
+    if (email) bumpCounter(emailFailKey, FAIL_WINDOW);
+    console.warn(`[security] login honeypot tripped ip=${ip}`);
+    return challenge({ error: "ایمیل یا گذرواژه نادرست است." });
   }
 
   // Adaptive CAPTCHA gate: required once this IP+email — or the email across all

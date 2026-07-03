@@ -25,7 +25,7 @@ export function parseAmount(input: string): number {
 /** Normalize a phone to an international number for wa.me (no +). Assumes Iran (98). */
 export function toWhatsappNumber(phone: string): string {
   let d = toEn(phone).replace(/\D/g, "");
-  if (d.startsWith("0098")) d = d.slice(4);
+  if (d.startsWith("0098")) d = d.slice(2); // drop the "00", keep the 98 country code
   else if (d.startsWith("98")) d = d;
   else if (d.startsWith("0")) d = "98" + d.slice(1);
   return d;

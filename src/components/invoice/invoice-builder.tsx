@@ -64,10 +64,11 @@ export function InvoiceBuilder({
   }, [seller]);
 
   const { subtotal, taxAmount, total } = useMemo(() => {
-    const sub = items.reduce((s, it) => s + it.qty * it.price, 0);
+    const sub = Math.round(items.reduce((s, it) => s + it.qty * it.price, 0));
     const taxable = Math.max(0, sub - discount);
     const tax = Math.round((taxable * taxRate) / 100);
-    return { subtotal: sub, taxAmount: tax, total: taxable + tax };
+    // Round to whole Toman so the displayed number and the amount-in-words agree.
+    return { subtotal: sub, taxAmount: tax, total: Math.round(taxable + tax) };
   }, [items, discount, taxRate]);
 
   function addItem() {
@@ -148,12 +149,12 @@ export function InvoiceBuilder({
             </button>
           </div>
           {items.map((it, idx) => (
-            <div key={it.id} className="grid grid-cols-12 items-center gap-2">
-              <input placeholder="شرح کالا / خدمات" value={it.desc} onChange={(e) => patch(it.id, "desc", e.target.value)} className={`col-span-12 sm:col-span-5 ${inputBase}`} />
-              <input aria-label="تعداد" type="number" min={0} dir="ltr" value={it.qty} onChange={(e) => patch(it.id, "qty", Number(e.target.value) || 0)} className={`col-span-3 sm:col-span-1 ${inputBase}`} />
-              <input aria-label="واحد" value={it.unit} onChange={(e) => patch(it.id, "unit", e.target.value)} className={`col-span-3 sm:col-span-2 ${inputBase}`} />
-              <input aria-label="قیمت واحد (تومان)" type="number" min={0} dir="ltr" value={it.price} onChange={(e) => patch(it.id, "price", Number(e.target.value) || 0)} className={`col-span-5 sm:col-span-3 ${inputBase}`} />
-              <button type="button" onClick={() => removeItem(it.id)} disabled={items.length <= 1} aria-label={`حذف ردیف ${idx + 1}`} className="col-span-1 flex items-center justify-center rounded-lg border border-border p-2 text-muted hover:bg-red-50 hover:text-red-600 disabled:opacity-40">
+            <div key={it.id} className="grid grid-cols-2 items-center gap-2 sm:grid-cols-12">
+              <input placeholder="شرح کالا / خدمات" value={it.desc} onChange={(e) => patch(it.id, "desc", e.target.value)} className={`col-span-2 sm:col-span-5 ${inputBase}`} />
+              <input aria-label="تعداد" type="number" min={0} dir="ltr" value={it.qty} onChange={(e) => patch(it.id, "qty", Number(e.target.value) || 0)} className={`col-span-1 sm:col-span-1 ${inputBase}`} />
+              <input aria-label="واحد" value={it.unit} onChange={(e) => patch(it.id, "unit", e.target.value)} className={`col-span-1 sm:col-span-2 ${inputBase}`} />
+              <input aria-label="قیمت واحد (تومان)" type="number" min={0} dir="ltr" value={it.price} onChange={(e) => patch(it.id, "price", Number(e.target.value) || 0)} className={`col-span-2 sm:col-span-3 ${inputBase}`} />
+              <button type="button" onClick={() => removeItem(it.id)} disabled={items.length <= 1} aria-label={`حذف ردیف ${idx + 1}`} className="col-span-2 flex items-center justify-center rounded-lg border border-border p-2 text-muted hover:bg-red-50 hover:text-red-600 disabled:opacity-40 sm:col-span-1">
                 <Trash2 size={15} />
               </button>
             </div>
@@ -203,7 +204,8 @@ export function InvoiceBuilder({
           </div>
         </div>
 
-        <table className="mt-4 w-full border-collapse text-sm">
+        <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[520px] border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100 text-right">
               <th className="border border-gray-300 p-2 font-semibold">ردیف</th>
@@ -227,6 +229,7 @@ export function InvoiceBuilder({
             ))}
           </tbody>
         </table>
+        </div>
 
         <div className="mt-4 flex justify-end">
           <table className="text-sm">

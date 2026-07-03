@@ -32,6 +32,9 @@ function threeDigitToWords(n: number): string {
 
 /** Convert a non-negative integer to Persian words. Returns «صفر» for 0. */
 export function toPersianWords(value: number): string {
+  // Guard against Infinity/NaN (e.g. a "1e400" invoice input) — an unguarded
+  // `while (n > 0)` on a non-finite n never terminates and freezes the tab.
+  if (!Number.isFinite(value)) return "صفر";
   let n = Math.floor(Math.abs(value));
   if (n === 0) return "صفر";
 

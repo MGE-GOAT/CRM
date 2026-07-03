@@ -59,6 +59,10 @@ export function TaskItem({
           <p className="truncate text-xs text-muted">{description}</p>
         )}
         {related && <p className="text-xs text-[var(--brand)]">{related}</p>}
+        {/* Due date shown here on mobile (the side column is hidden below sm). */}
+        <p className={`text-xs sm:hidden ${overdue ? "font-medium text-red-600" : "text-muted"}`}>
+          {dueDate ? formatDate(dueDate) : "بدون مهلت"}
+        </p>
       </div>
 
       <PriorityBadge priority={priority} />

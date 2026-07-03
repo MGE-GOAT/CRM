@@ -83,45 +83,52 @@ export async function createUser(formData: FormData): Promise<FormResult> {
   }
 }
 
-export async function updateUserRole(id: string, role: string) {
+export async function updateUserRole(id: string, role: string): Promise<FormResult> {
   const caller = await requireRole("OWNER", "ADMIN");
-  const nextRole = roleSchema.parse(role);
+  try {
+    const nextRole = roleSchema.parse(role);
+    if (id === caller.id) throw new Error("نمی‌توانید نقش خود را تغییر دهید.");
 
-  if (id === caller.id) throw new Error("نمی‌توانید نقش خود را تغییر دهید.");
+    const target = await prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: { role: true },
+    });
+    assertCanManageRole(caller.role, target.role, nextRole);
 
-  const target = await prisma.user.findUniqueOrThrow({
-    where: { id },
-    select: { role: true },
-  });
-  assertCanManageRole(caller.role, target.role, nextRole);
+    // Demoting an owner away from OWNER must not orphan the system.
+    if (target.role === "OWNER" && nextRole !== "OWNER") {
+      await assertNotLastOwner(id);
+    }
 
-  // Demoting an owner away from OWNER must not orphan the system.
-  if (target.role === "OWNER" && nextRole !== "OWNER") {
-    await assertNotLastOwner(id);
+    await prisma.user.update({ where: { id }, data: { role: nextRole } });
+    revalidatePath("/settings/users");
+  } catch (e) {
+    return formError(e);
   }
-
-  await prisma.user.update({ where: { id }, data: { role: nextRole } });
-  revalidatePath("/settings/users");
 }
 
-export async function toggleUserActive(id: string) {
+export async function toggleUserActive(id: string): Promise<FormResult> {
   const caller = await requireRole("OWNER", "ADMIN");
-  if (id === caller.id) throw new Error("نمی‌توانید حساب خود را غیرفعال کنید.");
+  try {
+    if (id === caller.id) throw new Error("نمی‌توانید حساب خود را غیرفعال کنید.");
 
-  const target = await prisma.user.findUniqueOrThrow({
-    where: { id },
-    select: { role: true, isActive: true },
-  });
-  assertCanManageRole(caller.role, target.role);
+    const target = await prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: { role: true, isActive: true },
+    });
+    assertCanManageRole(caller.role, target.role);
 
-  // Server decides the next state (don't trust the client) and guards last owner.
-  if (target.isActive) await assertNotLastOwner(id);
+    // Server decides the next state (don't trust the client) and guards last owner.
+    if (target.isActive) await assertNotLastOwner(id);
 
-  await prisma.user.update({
-    where: { id },
-    data: { isActive: !target.isActive },
-  });
-  revalidatePath("/settings/users");
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: !target.isActive },
+    });
+    revalidatePath("/settings/users");
+  } catch (e) {
+    return formError(e);
+  }
 }
 
 export async function resetUserPassword(id: string, formData: FormData): Promise<FormResult> {

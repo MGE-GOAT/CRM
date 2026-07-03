@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { GripVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { ConfirmDelete } from "@/components/confirm-delete";
@@ -45,21 +45,32 @@ export function KanbanBoard({
   initialDeals: DealCard[];
   companies: Option[];
   contacts: Option[];
-  moveDeal: (id: string, stage: string) => Promise<void>;
+  moveDeal: (id: string, stage: string) => Promise<{ error?: string } | void>;
   updateDeal: (id: string, formData: FormData) => Promise<{ error?: string } | void>;
-  deleteDeal: (id: string) => Promise<void>;
+  deleteDeal: (id: string) => Promise<{ error?: string } | void>;
 }) {
   const [deals, setDeals] = useState(initialDeals);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  // Resync when the server streams fresh data after an edit/delete
+  // (revalidatePath('/deals')) — otherwise the board keeps stale cards.
+  useEffect(() => {
+    setDeals(initialDeals);
+  }, [initialDeals]);
+
   function move(id: string, stage: string) {
     const deal = deals.find((d) => d.id === id);
     if (!deal || deal.stage === stage) return;
+    const prevStage = deal.stage;
     setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, stage } : d)));
-    startTransition(() => {
-      moveDeal(id, stage);
+    startTransition(async () => {
+      const res = await moveDeal(id, stage);
+      // Roll back the optimistic move if the server rejected it (e.g. not owner).
+      if (res?.error) {
+        setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, stage: prevStage } : d)));
+      }
     });
   }
 
@@ -158,7 +169,7 @@ export function KanbanBoard({
                     id={`stage-${d.id}`}
                     value={d.stage}
                     onChange={(e) => move(d.id, e.target.value)}
-                    className="mt-2 w-full rounded-md border border-border bg-surface px-2 py-1 text-xs text-muted opacity-0 transition focus:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                    className="mt-2 w-full rounded-md border border-border bg-surface px-2 py-1 text-xs text-muted opacity-100 transition sm:opacity-0 sm:focus:opacity-100 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   >
                     {COLUMNS.map((c) => (
                       <option key={c.key} value={c.key}>

@@ -103,8 +103,8 @@ export function ChatThread({
                       <span className="line-clamp-1">{m.replyToBody}</span>
                     </div>
                   )}
-                  <div className="flex items-start gap-2">
-                    <p className="text-sm leading-relaxed text-text">{m.body}</p>
+                  <div className="flex min-w-0 items-start gap-2">
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-text">{m.body}</p>
                     <button
                       onClick={() => {
                         setReplyTo(m);

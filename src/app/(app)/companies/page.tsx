@@ -79,7 +79,7 @@ export default async function CompaniesPage({
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-[var(--brand)]">
                 <Building2 size={18} />
               </div>
-              <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+              <div className="flex items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                 <CompanyForm
                   mode="edit"
                   action={updateCompany.bind(null, c.id)}
