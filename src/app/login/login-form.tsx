@@ -40,7 +40,7 @@ export function LoginForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="relative space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium">
           ایمیل
@@ -72,8 +72,23 @@ export function LoginForm() {
         />
       </div>
 
-      {/* Honeypot: invisible to humans; bots that auto-fill every field trip it. */}
-      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+      {/* Honeypot: in the DOM so bots auto-fill it, but visually hidden from
+          humans. Uses the clip technique (NOT left:-9999px, which causes
+          horizontal overflow / a shifted layout on mobile RTL). */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0, 0, 0, 0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
         <label htmlFor="company_website">Company website</label>
         <input
           id="company_website"

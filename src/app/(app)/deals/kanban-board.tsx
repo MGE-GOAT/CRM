@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { GripVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
@@ -118,7 +119,12 @@ export function KanbanBoard({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-1">
-                    <p className="text-sm font-medium leading-snug">{d.title}</p>
+                    <Link
+                      href={`/deals/${d.id}`}
+                      className="text-sm font-medium leading-snug hover:text-[var(--brand)] hover:underline"
+                    >
+                      {d.title}
+                    </Link>
                     <div className="flex items-center opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                       <DealForm
                         mode="edit"
