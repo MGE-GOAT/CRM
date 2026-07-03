@@ -76,9 +76,11 @@ services:
 
   # Scheduler: pings the SMS endpoint every minute so due reminders actually send.
   # Reaches the app over the internal compose network (not the public port).
+  # Uses node:24-alpine — already cached locally as the app's base image, so it
+  # needs no Docker Hub pull (which is blocked/throttled in Iran).
   # No-ops harmlessly (401) until CRON_SECRET is set in .env.
   cron:
-    image: curlimages/curl:8.11.1
+    image: node:24-alpine
     restart: unless-stopped
     logging: *default-logging
     depends_on:
@@ -86,10 +88,10 @@ services:
         condition: service_started
     environment:
       CRON_SECRET: ${CRON_SECRET:-}
-    entrypoint:
-      - /bin/sh
-      - -c
-      - 'while true; do curl -fsS -m 20 -X POST -H "x-cron-secret: $${CRON_SECRET}" http://app:3000/api/cron/send-sms >/dev/null 2>&1 || true; sleep 60; done'
+    command:
+      - node
+      - -e
+      - "const tick=()=>fetch('http://app:3000/api/cron/send-sms',{method:'POST',headers:{'x-cron-secret':process.env.CRON_SECRET||''}}).catch(()=>{});setInterval(tick,60000);tick();"
 
   # Restarts any container marked unhealthy (e.g. a hung app) automatically.
   autoheal:
