@@ -65,6 +65,7 @@ export default async function CompanyDetailPage({
           <div className="rounded-xl border border-border bg-surface p-5">
             <h1 className="text-lg font-bold">{company.name}</h1>
             <p className="text-sm text-muted">{company.industry ?? "—"}</p>
+            {company.senf && <p className="text-sm text-muted">صنف: {company.senf}</p>}
 
             <div className="mt-5 space-y-3 text-sm">
               {safeUrl(company.website) && (

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { Building2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
+import { SelectFilter } from "@/components/select-filter";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { CompanyForm } from "./company-form";
 import { createCompany, updateCompany, deleteCompany } from "@/lib/actions/companies";
@@ -11,26 +13,42 @@ import { formatNumber } from "@/lib/format";
 export default async function CompaniesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; senf?: string }>;
 }) {
-  const { q } = await searchParams;
-  const where = q
-    ? {
-        OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { industry: { contains: q, mode: "insensitive" as const } },
-          { domain: { contains: q, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const { q, senf } = await searchParams;
+  const and: Prisma.CompanyWhereInput[] = [];
+  if (q) {
+    and.push({
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { industry: { contains: q, mode: "insensitive" } },
+        { senf: { contains: q, mode: "insensitive" } },
+        { domain: { contains: q, mode: "insensitive" } },
+      ],
+    });
+  }
+  if (senf) and.push({ senf });
+  const where: Prisma.CompanyWhereInput = and.length ? { AND: and } : {};
 
-  const companies = await prisma.company.findMany({
-    where,
-    orderBy: { name: "asc" },
-    include: {
-      _count: { select: { contacts: true, deals: true } },
-    },
-  });
+  const [companies, senfRows] = await Promise.all([
+    prisma.company.findMany({
+      where,
+      orderBy: { name: "asc" },
+      include: {
+        _count: { select: { contacts: true, deals: true } },
+      },
+    }),
+    prisma.company.findMany({
+      where: { senf: { not: null } },
+      select: { senf: true },
+      distinct: ["senf"],
+      orderBy: { senf: "asc" },
+    }),
+  ]);
+  const senfOptions = senfRows
+    .map((r) => r.senf)
+    .filter((s): s is string => !!s)
+    .map((s) => ({ value: s, label: s }));
 
   return (
     <div>
@@ -38,8 +56,9 @@ export default async function CompaniesPage({
         title="شرکت‌ها"
         subtitle={`${formatNumber(companies.length)} شرکت`}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchInput placeholder="جستجوی شرکت‌ها…" />
+            <SelectFilter param="senf" allLabel="همهٔ اصناف" options={senfOptions} />
             <CompanyForm mode="create" action={createCompany} />
           </div>
         }
@@ -67,6 +86,7 @@ export default async function CompaniesPage({
                   values={{
                     name: c.name,
                     industry: c.industry,
+                    senf: c.senf,
                     domain: c.domain,
                     website: c.website,
                     phone: c.phone,
@@ -80,6 +100,7 @@ export default async function CompaniesPage({
             <Link href={`/companies/${c.id}`} className="mt-3 block">
               <h3 className="font-semibold hover:text-[var(--brand)]">{c.name}</h3>
               <p className="text-sm text-muted">{c.industry ?? "—"}</p>
+              {c.senf && <p className="text-xs text-muted">صنف: {c.senf}</p>}
             </Link>
             <div className="mt-3 flex gap-4 text-xs text-muted">
               <span>{formatNumber(c._count.contacts)} مخاطب</span>

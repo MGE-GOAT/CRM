@@ -53,6 +53,7 @@ model Company {
   name      String
   domain    String?
   industry  String?
+  senf      String?  // صنف (business/trade category, for filtering)
   website   String?
   phone     String?
   address   String?
@@ -78,6 +79,7 @@ model Contact {
   email     String?
   phone     String?
   title     String?
+  senf      String?  // صنف (business/trade category, for filtering)
   status    String   @default("active")
   notes     String?
   companyId String?

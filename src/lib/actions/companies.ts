@@ -9,6 +9,7 @@ import { formError, type FormResult } from "@/lib/form-result";
 const schema = z.object({
   name: z.string().min(1, "نام شرکت الزامی است"),
   industry: z.string().optional(),
+  senf: z.string().max(120).optional(),
   domain: z.string().optional(),
   website: z.string().optional(),
   phone: z.string().optional(),
@@ -20,6 +21,7 @@ function parse(formData: FormData) {
   return schema.parse({
     name: formData.get("name"),
     industry: formData.get("industry") || undefined,
+    senf: formData.get("senf") || undefined,
     domain: formData.get("domain") || undefined,
     website: formData.get("website") || undefined,
     phone: formData.get("phone") || undefined,
@@ -36,6 +38,7 @@ export async function createCompany(formData: FormData): Promise<FormResult> {
       data: {
         name: d.name,
         industry: d.industry || null,
+        senf: d.senf || null,
         domain: d.domain || null,
         website: d.website || null,
         phone: d.phone || null,
@@ -63,6 +66,7 @@ export async function updateCompany(id: string, formData: FormData): Promise<For
       data: {
         name: d.name,
         industry: d.industry || null,
+        senf: d.senf || null,
         domain: d.domain || null,
         website: d.website || null,
         phone: d.phone || null,

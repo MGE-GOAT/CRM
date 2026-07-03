@@ -12,6 +12,7 @@ const schema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   title: z.string().max(300).optional(),
+  senf: z.string().max(120).optional(),
   companyId: z.string().optional(),
   notes: z.string().max(10000).optional(),
 });
@@ -23,6 +24,7 @@ function parse(formData: FormData) {
     email: formData.get("email") || "",
     phone: formData.get("phone") || undefined,
     title: formData.get("title") || undefined,
+    senf: formData.get("senf") || undefined,
     companyId: formData.get("companyId") || undefined,
     notes: formData.get("notes") || undefined,
   });
@@ -39,6 +41,7 @@ export async function createContact(formData: FormData): Promise<FormResult> {
         email: data.email || null,
         phone: data.phone || null,
         title: data.title || null,
+        senf: data.senf || null,
         companyId: data.companyId || null,
         notes: data.notes || null,
         ownerId: user.id,
@@ -66,6 +69,7 @@ export async function updateContact(id: string, formData: FormData): Promise<For
         email: data.email || null,
         phone: data.phone || null,
         title: data.title || null,
+        senf: data.senf || null,
         companyId: data.companyId || null,
         notes: data.notes || null,
       },

@@ -7,6 +7,7 @@ import { Field, Input, Textarea, SubmitButton, ModalForm } from "@/components/ui
 export type CompanyValues = {
   name: string;
   industry: string | null;
+  senf: string | null;
   domain: string | null;
   website: string | null;
   phone: string | null;
@@ -58,6 +59,9 @@ export function CompanyForm({
               <Input name="domain" dir="ltr" placeholder="acme.com" defaultValue={values?.domain ?? ""} />
             </Field>
           </div>
+          <Field label="صنف">
+            <Input name="senf" defaultValue={values?.senf ?? ""} placeholder="مثلاً پوشاک، مواد غذایی…" />
+          </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="وب‌سایت">
               <Input name="website" dir="ltr" defaultValue={values?.website ?? ""} />

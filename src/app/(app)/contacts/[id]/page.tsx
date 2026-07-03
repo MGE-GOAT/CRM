@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Mail, Phone, Building2, Briefcase } from "lucide-react";
+import { ArrowRight, Mail, Phone, Building2, Briefcase, Tag } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
 import { StageBadge } from "@/components/ui/badge";
@@ -110,6 +110,12 @@ export default async function ContactDetailPage({
                   >
                     {contact.company.name}
                   </Link>
+                </div>
+              )}
+              {contact.senf && (
+                <div className="flex items-center gap-2">
+                  <Tag size={15} className="text-muted" />
+                  صنف: {contact.senf}
                 </div>
               )}
               <div className="flex items-center gap-2">

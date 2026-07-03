@@ -13,6 +13,7 @@ export type ContactValues = {
   email: string | null;
   phone: string | null;
   title: string | null;
+  senf: string | null;
   companyId: string | null;
   notes: string | null;
 };
@@ -71,6 +72,9 @@ export function ContactForm({
               <Input name="title" defaultValue={values?.title ?? ""} />
             </Field>
           </div>
+          <Field label="صنف">
+            <Input name="senf" defaultValue={values?.senf ?? ""} placeholder="مثلاً پوشاک، مواد غذایی…" />
+          </Field>
           <Field label="شرکت">
             <Select name="companyId" defaultValue={values?.companyId ?? ""}>
               <option value="">— بدون شرکت —</option>

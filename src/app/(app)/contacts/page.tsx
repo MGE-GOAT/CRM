@@ -19,9 +19,9 @@ import { formatNumber, toFa } from "@/lib/format";
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; company?: string }>;
+  searchParams: Promise<{ q?: string; company?: string; senf?: string }>;
 }) {
-  const { q, company } = await searchParams;
+  const { q, company, senf } = await searchParams;
 
   const and: Prisma.ContactWhereInput[] = [];
   if (q) {
@@ -35,9 +35,10 @@ export default async function ContactsPage({
     });
   }
   if (company) and.push({ companyId: company });
+  if (senf) and.push({ senf });
   const where: Prisma.ContactWhereInput = and.length ? { AND: and } : {};
 
-  const [contacts, companies] = await Promise.all([
+  const [contacts, companies, senfRows] = await Promise.all([
     prisma.contact.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -47,7 +48,17 @@ export default async function ContactsPage({
       },
     }),
     prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.contact.findMany({
+      where: { senf: { not: null } },
+      select: { senf: true },
+      distinct: ["senf"],
+      orderBy: { senf: "asc" },
+    }),
   ]);
+  const senfOptions = senfRows
+    .map((r) => r.senf)
+    .filter((s): s is string => !!s)
+    .map((s) => ({ value: s, label: s }));
 
   return (
     <div>
@@ -62,6 +73,7 @@ export default async function ContactsPage({
               allLabel="همهٔ شرکت‌ها"
               options={companies.map((c) => ({ value: c.id, label: c.name }))}
             />
+            <SelectFilter param="senf" allLabel="همهٔ اصناف" options={senfOptions} />
             <ContactForm mode="create" action={createContact} companies={companies} />
           </div>
         }
@@ -74,6 +86,7 @@ export default async function ContactsPage({
               <tr>
                 <th className="px-4 py-3 font-medium">نام</th>
                 <th className="hidden px-4 py-3 font-medium md:table-cell">شرکت</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">صنف</th>
                 <th className="hidden px-4 py-3 font-medium sm:table-cell">تلفن</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">ایمیل</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">مسئول</th>
@@ -83,7 +96,7 @@ export default async function ContactsPage({
             <tbody className="divide-y divide-border">
               {contacts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted">
+                  <td colSpan={7} className="px-4 py-10 text-center text-muted">
                     مخاطبی یافت نشد.
                   </td>
                 </tr>
@@ -113,6 +126,9 @@ export default async function ContactsPage({
                   <td className="hidden px-4 py-3 text-muted md:table-cell">
                     {c.company?.name ?? "—"}
                   </td>
+                  <td className="hidden px-4 py-3 text-muted lg:table-cell">
+                    {c.senf ?? "—"}
+                  </td>
                   <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">
                     {c.phone ? toFa(c.phone) : "—"}
                   </td>
@@ -137,6 +153,7 @@ export default async function ContactsPage({
                           email: c.email,
                           phone: c.phone,
                           title: c.title,
+                          senf: c.senf,
                           companyId: c.companyId,
                           notes: c.notes,
                         }}
