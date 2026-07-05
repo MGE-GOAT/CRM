@@ -34,7 +34,10 @@ function cleanPhone(v: string): string {
   return v.replace(/[^\d+\-() ]/g, "").trim();
 }
 
-function parseVcard(text: string): ParsedContact[] {
+/** Hard ceiling on parsed contacts — bounds memory regardless of file size. */
+export const MAX_CONTACTS = 10000;
+
+function parseVcard(text: string, cap: number): ParsedContact[] {
   // Normalise line endings, drop QUOTED-PRINTABLE soft line breaks (= at EOL),
   // then unfold folded continuation lines (RFC: a line starting with SPACE/TAB
   // continues the previous one).
@@ -43,10 +46,13 @@ function parseVcard(text: string): ParsedContact[] {
     .replace(/=\n/g, "")
     .replace(/\n[ \t]/g, "");
 
-  const cards = unfolded.split(/BEGIN:VCARD/i).slice(1);
+  // split(limit) bounds the array so a huge file can't materialise millions of
+  // card strings, and the loop stops at `cap` so the output array is bounded too.
+  const cards = unfolded.split(/BEGIN:VCARD/i, cap + 1).slice(1);
   const out: ParsedContact[] = [];
 
   for (const card of cards) {
+    if (out.length >= cap) break;
     let n = "";
     let fn = "";
     let tel = "";
@@ -132,8 +138,8 @@ function splitCsvLine(line: string): string[] {
   return fields.map((f) => f.trim());
 }
 
-function parseCsv(text: string): ParsedContact[] {
-  const rows = text.replace(/\r\n?/g, "\n").split("\n").filter((l) => l.trim());
+function parseCsv(text: string, cap: number): ParsedContact[] {
+  const rows = text.replace(/\r\n?/g, "\n").split("\n", cap + 2).filter((l) => l.trim());
   if (rows.length < 2) return [];
   const header = splitCsvLine(rows[0]).map((h) => h.toLowerCase());
   const find = (...names: string[]) =>
@@ -148,7 +154,7 @@ function parseCsv(text: string): ParsedContact[] {
   const iTitle = find("organization 1 - title", "job title", "title", "سمت");
 
   const out: ParsedContact[] = [];
-  for (let r = 1; r < rows.length; r++) {
+  for (let r = 1; r < rows.length && out.length < cap; r++) {
     const c = splitCsvLine(rows[r]);
     const at = (i: number) => (i >= 0 && i < c.length ? c[i].trim() : "");
     let firstName = at(iFirst);
@@ -167,7 +173,7 @@ function parseCsv(text: string): ParsedContact[] {
   return out;
 }
 
-/** Auto-detect vCard vs CSV and parse into contacts. */
-export function parseContacts(text: string): ParsedContact[] {
-  return /BEGIN:VCARD/i.test(text.slice(0, 2000)) ? parseVcard(text) : parseCsv(text);
+/** Auto-detect vCard vs CSV and parse into contacts (bounded to `cap`). */
+export function parseContacts(text: string, cap: number = MAX_CONTACTS): ParsedContact[] {
+  return /BEGIN:VCARD/i.test(text.slice(0, 2000)) ? parseVcard(text, cap) : parseCsv(text, cap);
 }

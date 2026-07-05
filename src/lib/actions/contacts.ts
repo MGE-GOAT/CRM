@@ -139,26 +139,36 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
       return { error: "حجم فایل بیش از حد مجاز است (حداکثر ۲۰ مگابایت)." };
     }
 
-    const parsed = parseContacts(await file.text());
-    if (parsed.length === 0) {
+    // parseContacts is bounded internally (MAX_CONTACTS) so a huge/crafted file
+    // can't materialise an oversized array before we cap it.
+    const rows = parseContacts(await file.text());
+    if (rows.length === 0) {
       return { error: "مخاطبی در فایل پیدا نشد. یک فایل vCard (.vcf) یا CSV معتبر انتخاب کنید." };
     }
-    const total = Math.min(parsed.length, 10000);
-    const rows = parsed.slice(0, total);
+    const total = rows.length;
 
     const digits = (s: string) => s.replace(/\D/g, "");
 
-    // De-duplicate within the file (by phone, else email, else full name).
+    // De-duplicate within the file by phone, else email. Name-only rows (no
+    // phone/email) get a per-row key so two DIFFERENT people who happen to share
+    // a name aren't collapsed into one.
     const seen = new Set<string>();
-    const unique = rows.filter((c) => {
-      const key = digits(c.phone) || c.email.toLowerCase() || `${c.firstName}|${c.lastName}`;
+    const unique = rows.filter((c, idx) => {
+      const key =
+        digits(c.phone) ||
+        c.email.toLowerCase() ||
+        `n:${idx}:${c.firstName}|${c.lastName}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
 
     // De-duplicate against contacts already in the CRM (no DB unique constraint).
-    const existing = await prisma.contact.findMany({ select: { phone: true, email: true } });
+    // Bounded take so this can't load an unbounded table into memory.
+    const existing = await prisma.contact.findMany({
+      select: { phone: true, email: true },
+      take: 100000,
+    });
     const existingPhones = new Set(existing.map((e) => digits(e.phone ?? "")).filter(Boolean));
     const existingEmails = new Set(existing.map((e) => (e.email ?? "").toLowerCase()).filter(Boolean));
     const toInsert = unique.filter((c) => {
