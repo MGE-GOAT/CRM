@@ -68,7 +68,7 @@ export function ReminderForm({
         <Select name="action" value={act} onChange={(e) => setAct(e.target.value)}>
           <option value="CALL">تماس با مخاطب</option>
           <option value="WHATSAPP">پیام واتساپ به مخاطب</option>
-          <option value="SMS">پیامک به مخاطب</option>
+          {/* SMS auto-send is disabled until the Melipayamak line is configured. */}
           <option value="GENERAL">یادآوری عمومی</option>
         </Select>
       </Field>
