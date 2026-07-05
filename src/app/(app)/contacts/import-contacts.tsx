@@ -37,18 +37,21 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       className="space-y-4"
     >
       <div className="rounded-lg bg-gray-50 p-3 text-sm leading-relaxed text-muted">
-        <p className="font-medium text-text">از آیفون:</p>
+        <p className="font-medium text-text">تهیهٔ فایل مخاطبین (فایل vCard/‏.vcf):</p>
         <p className="mt-1">
-          در <span dir="ltr">iCloud.com</span> وارد شوید ← <b>Contacts</b> ← یک مخاطب را انتخاب و کلید
-          <span dir="ltr"> Ctrl/Cmd + A </span> برای انتخاب همه ← چرخ‌دنده ⚙ ← <b>Export vCard</b>.
-          فایل <span dir="ltr">.vcf</span> دریافتی را اینجا بارگذاری کنید. فایل <span dir="ltr">CSV</span> هم پشتیبانی می‌شود.
+          <b>از خود آیفون:</b> برنامهٔ رایگان <span dir="ltr">«My Contacts Backup»</span> را نصب کنید ← <b>Backup</b>
+          ← فایل را در <b>Files</b> ذخیره کنید. سپس همان فایل را اینجا بارگذاری کنید.
+        </p>
+        <p className="mt-1">
+          <b>یا با رایانه:</b> <span dir="ltr">iCloud.com</span> ← <b>Contacts</b> ← انتخاب همه
+          <span dir="ltr"> (Ctrl/Cmd + A) </span> ← ⚙ ← <b>Export vCard</b>. فایل <span dir="ltr">CSV</span> هم پشتیبانی می‌شود.
         </p>
       </div>
 
       <input
         type="file"
         name="file"
-        accept=".vcf,.csv,text/vcard,text/csv"
+        accept=".vcf,.csv,.txt,text/vcard,text/x-vcard,text/directory,text/csv,text/plain,application/octet-stream"
         required
         disabled={pending || done}
         className="block w-full rounded-lg border border-border p-2 text-sm file:me-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--brand)] file:px-4 file:py-2 file:text-white"
