@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { DuplicateButton } from "@/components/duplicate-button";
 import { ContactForm } from "./contact-form";
+import { ImportContacts } from "./import-contacts";
 import {
   createContact,
   updateContact,
@@ -74,6 +75,7 @@ export default async function ContactsPage({
               options={companies.map((c) => ({ value: c.id, label: c.name }))}
             />
             <SelectFilter param="senf" allLabel="همهٔ اصناف" options={senfOptions} />
+            <ImportContacts />
             <ContactForm mode="create" action={createContact} companies={companies} />
           </div>
         }
