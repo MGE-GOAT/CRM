@@ -7,6 +7,7 @@ const recs = JSON.parse(readFileSync("/home/mahrad/nexus-crm/.import-contacts.js
 const senf = new Map(
   JSON.parse(readFileSync("/home/mahrad/nexus-crm/.senf-results.json", "utf8")).map((r) => [r.i, r.senf]),
 );
+const company = JSON.parse(readFileSync("/home/mahrad/nexus-crm/.company-results.json", "utf8"));
 
 const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
 const maxPhones = Math.max(1, ...recs.map((r) => r.phones.length));
@@ -15,6 +16,7 @@ const header = [
   "Last Name",
   ...Array.from({ length: maxPhones }, (_, i) => `Phone ${i + 1} - Value`),
   "E-mail 1 - Value",
+  "Organization 1 - Name",
   "senf",
   "notes",
 ];
@@ -34,7 +36,9 @@ for (const r of recs) {
     .join("\n");
   const phones = Array.from({ length: maxPhones }, (_, i) => r.phones[i] ?? "");
   lines.push(
-    [firstName, lastName, ...phones, r.email ?? "", senf.get(r.i) ?? "", notesClean].map(q).join(","),
+    [firstName, lastName, ...phones, r.email ?? "", company[r.i] ?? "", senf.get(r.i) ?? "", notesClean]
+      .map(q)
+      .join(","),
   );
 }
 writeFileSync("/home/mahrad/contacts-import.csv", lines.join("\n"));

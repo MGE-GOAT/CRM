@@ -183,6 +183,34 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
       return true;
     });
 
+    // Create/link companies named in the file (e.g. business names the file
+    // carries in an Organization/Company column). Reuse an existing company of
+    // the same name; otherwise create it once. Bounded and deduped.
+    const companyId = new Map<string, string>();
+    const wanted = [
+      ...new Set(toInsert.map((c) => c.company?.trim()).filter((n): n is string => !!n)),
+    ].map((n) => n.slice(0, 200));
+    if (wanted.length) {
+      const found = await prisma.company.findMany({
+        where: { name: { in: wanted } },
+        select: { id: true, name: true },
+      });
+      for (const co of found) if (!companyId.has(co.name)) companyId.set(co.name, co.id);
+      const missing = wanted.filter((n) => !companyId.has(n));
+      for (let i = 0; i < missing.length; i += 200) {
+        await prisma.company.createMany({
+          data: missing.slice(i, i + 200).map((name) => ({ name, ownerId: user.id })),
+        });
+      }
+      if (missing.length) {
+        const created = await prisma.company.findMany({
+          where: { name: { in: missing } },
+          select: { id: true, name: true },
+        });
+        for (const co of created) if (!companyId.has(co.name)) companyId.set(co.name, co.id);
+      }
+    }
+
     let imported = 0;
     const CHUNK = 500;
     for (let i = 0; i < toInsert.length; i += CHUNK) {
@@ -195,6 +223,7 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
         title: c.title ? c.title.slice(0, 200) : null,
         senf: c.senf ? c.senf.slice(0, 120) : null,
         notes: c.notes ? c.notes.slice(0, 10000) : null,
+        companyId: (c.company && companyId.get(c.company.trim())) || null,
         ownerId: user.id,
       }));
       const res = await prisma.contact.createMany({ data });
