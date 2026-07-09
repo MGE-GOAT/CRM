@@ -98,6 +98,8 @@ model Contact {
   @@index([ownerId])
   @@index([companyId])
   @@index([lastName])
+  @@index([createdAt])
+  @@index([senf])
 }
 
 enum DealStage {

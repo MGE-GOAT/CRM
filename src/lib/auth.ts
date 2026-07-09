@@ -2,8 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/auth.config";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Fail loud at runtime in production if the secret is missing or left as an
 // example value. Skipped during `next build` (page-data collection), where
@@ -46,6 +48,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
+
+        // Brute-force backstop that also covers the raw NextAuth credentials
+        // callback (POST /api/auth/callback/credentials), which bypasses the
+        // login form's throttle. Shares the same limiter keys as the login
+        // action so both entry paths draw down one counter. Fail-closed.
+        try {
+          const hdrs = await headers();
+          const xff = hdrs.get("x-forwarded-for") || "";
+          const ip = xff.split(",").pop()?.trim() || hdrs.get("x-real-ip") || "unknown";
+          const emailKey = email.toLowerCase();
+          if (
+            !checkRateLimit(`login:ip:${ip}`, 30, 60 * 1000).allowed ||
+            !checkRateLimit(`login:${ip}:${emailKey}`, 10, 60 * 1000).allowed
+          ) {
+            return null;
+          }
+        } catch {
+          return null;
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: email.toLowerCase() },

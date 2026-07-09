@@ -104,6 +104,11 @@ export async function duplicateContact(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
     const src = await prisma.contact.findUniqueOrThrow({ where: { id } });
+    // Same ownership gate as update/delete — a member can't clone a contact they
+    // don't own into a record they'd fully control.
+    if (src.ownerId !== user.id && !canManageUsers(user.role)) {
+      return { error: "اجازهٔ کپی این مخاطب را ندارید." };
+    }
     await prisma.contact.create({
       data: {
         firstName: src.firstName,

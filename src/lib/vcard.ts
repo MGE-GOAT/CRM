@@ -171,8 +171,36 @@ function splitCsvLine(line: string): string[] {
   return fields.map((f) => f.trim());
 }
 
+/** Split CSV text into records, honouring newlines inside double-quoted fields
+ *  (notes/addresses legitimately contain line breaks). Stops after `limit`. */
+function splitCsvRecords(text: string, limit: number): string[] {
+  const records: string[] = [];
+  let cur = "";
+  let inQ = false;
+  for (let i = 0; i < text.length && records.length < limit; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQ && text[i + 1] === '"') {
+        cur += '""'; // keep escaped quote for splitCsvLine
+        i++;
+      } else {
+        inQ = !inQ;
+        cur += '"';
+      }
+    } else if ((c === "\n" || c === "\r") && !inQ) {
+      if (c === "\r" && text[i + 1] === "\n") i++; // CRLF
+      records.push(cur);
+      cur = "";
+    } else {
+      cur += c;
+    }
+  }
+  if (cur && records.length < limit) records.push(cur);
+  return records;
+}
+
 function parseCsv(text: string, cap: number): ParsedContact[] {
-  const rows = text.replace(/\r\n?/g, "\n").split("\n", cap + 2).filter((l) => l.trim());
+  const rows = splitCsvRecords(text, cap + 2).filter((l) => l.trim());
   if (rows.length < 2) return [];
   const header = splitCsvLine(rows[0]).map((h) => h.toLowerCase());
   const find = (...names: string[]) =>

@@ -56,7 +56,12 @@ export function ChatThread({
   return (
     <div className="flex h-full flex-col">
       {/* Messages */}
-      <div className="flex-1 space-y-1 overflow-y-auto bg-bg p-4">
+      <div
+        className="flex-1 space-y-1 overflow-y-auto bg-bg p-4"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         {messages.length === 0 && (
           <p className="py-10 text-center text-sm text-muted">
             هنوز پیامی نیست. سلام کنید 👋

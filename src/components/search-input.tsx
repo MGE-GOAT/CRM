@@ -15,6 +15,7 @@ export function SearchInput({ placeholder = "Search…" }: { placeholder?: strin
       const sp = new URLSearchParams(params.toString());
       if (value) sp.set("q", value);
       else sp.delete("q");
+      sp.delete("page"); // a new search must start from page 1
       router.replace(`${pathname}?${sp.toString()}`);
     }, 250);
     return () => clearTimeout(t);

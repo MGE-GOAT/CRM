@@ -137,8 +137,16 @@ export async function moveDealStage(id: string, stage: string): Promise<{ error?
         stage: stage as DealStage,
         status,
         closedAt,
-        // Keep probability consistent with the stage.
-        ...(status !== "OPEN" ? { probability: status === "WON" ? 100 : 0 } : {}),
+        // Keep probability consistent with the stage: WON=100, LOST=0, and when a
+        // CLOSED deal is dragged back OPEN reset to the default (10) instead of
+        // leaving it stuck at 100/0. An open→open move keeps the current value.
+        ...(status === "WON"
+          ? { probability: 100 }
+          : status === "LOST"
+            ? { probability: 0 }
+            : prev.status !== "OPEN"
+              ? { probability: 10 }
+              : {}),
       },
     });
     await prisma.activity.create({

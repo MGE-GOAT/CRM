@@ -24,6 +24,7 @@ export function SelectFilter({
         const next = new URLSearchParams(sp.toString());
         if (e.target.value) next.set(param, e.target.value);
         else next.delete(param);
+        next.delete("page"); // changing a filter must start from page 1
         router.replace(`${pathname}?${next.toString()}`);
       }}
       className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/50"
