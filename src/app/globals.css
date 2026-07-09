@@ -154,3 +154,8 @@ body {
     margin: 1.5cm;
   }
 }
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation: none; }
+}

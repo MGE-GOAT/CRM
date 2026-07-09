@@ -169,7 +169,7 @@ export function CalendarView({
                   <button
                     onClick={() => setModal({ type: "add", date: gregorianForDay(day) })}
                     aria-label="افزودن برنامه"
-                    className="rounded p-0.5 text-muted opacity-0 transition hover:bg-gray-100 hover:text-text focus:opacity-100 [div:hover>div>&]:opacity-100"
+                    className="rounded p-0.5 text-muted opacity-100 transition hover:bg-gray-100 hover:text-text focus:opacity-100 sm:opacity-0 sm:[div:hover>div>&]:opacity-100"
                   >
                     <Plus size={13} aria-hidden="true" />
                   </button>

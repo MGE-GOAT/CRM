@@ -33,11 +33,16 @@ export function Modal({
     lastFocused.current?.focus?.();
   }, []);
 
-  // Move focus into the dialog when it opens.
+  // Move focus into the dialog when it opens + lock background scroll.
   useEffect(() => {
     if (!open) return;
     const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE);
     first?.focus();
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   // Escape to close + trap Tab inside the dialog.

@@ -112,7 +112,7 @@ export function ChatThread({
                       }}
                       aria-label="پاسخ"
                       title="پاسخ"
-                      className="mt-0.5 shrink-0 rounded p-1 text-muted opacity-0 transition hover:bg-gray-100 hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
+                      className="mt-0.5 shrink-0 rounded p-1 text-muted opacity-100 transition hover:bg-gray-100 hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                     >
                       <Reply size={14} aria-hidden="true" />
                     </button>

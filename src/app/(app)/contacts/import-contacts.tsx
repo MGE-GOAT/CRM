@@ -65,7 +65,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
         </p>
       )}
       {done && (
-        <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
           ✅ {toFa(result!.imported!)} مخاطب وارد شد
           {result!.duplicates ? ` · ${toFa(result!.duplicates)} مورد تکراری رد شد` : ""}.
         </p>

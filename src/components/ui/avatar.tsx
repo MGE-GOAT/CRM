@@ -19,6 +19,7 @@ export function Avatar({
         fontSize: size * 0.4,
       }}
       title={name}
+      aria-hidden="true"
     >
       {initials(name)}
     </span>

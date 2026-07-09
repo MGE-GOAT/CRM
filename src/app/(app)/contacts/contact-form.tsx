@@ -45,8 +45,9 @@ export function ContactForm({
             onClick={open}
             className="rounded-lg p-1.5 text-muted hover:bg-gray-50 hover:text-text"
             title="ویرایش"
+            aria-label="ویرایش"
           >
-            <Pencil size={16} />
+            <Pencil size={16} aria-hidden="true" />
           </button>
         )
       }
