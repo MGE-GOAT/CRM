@@ -45,3 +45,7 @@ src.bak/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# private contact import data (never commit)
+.import-contacts.json
+.senf-results.json

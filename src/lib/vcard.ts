@@ -6,10 +6,13 @@
 export type ParsedContact = {
   firstName: string;
   lastName: string;
-  phone: string;
+  phone: string; // primary number
+  phones: string[]; // ALL numbers (primary first) — nothing dropped
   email: string;
   title: string;
   company: string;
+  senf: string; // business category (from a CSV column; empty for vCard)
+  notes: string; // extra phones, birthday, org, url, and any NOTE — so nothing is lost
 };
 
 /** Decode a QUOTED-PRINTABLE value (=XX byte sequences) as UTF-8. */
@@ -55,11 +58,13 @@ function parseVcard(text: string, cap: number): ParsedContact[] {
     if (out.length >= cap) break;
     let n = "";
     let fn = "";
-    let tel = "";
-    let telIsCell = false;
+    const tels: { value: string; cell: boolean }[] = [];
     let email = "";
     let title = "";
     let org = "";
+    let bday = "";
+    let url = "";
+    const rawNotes: string[] = [];
 
     for (const line of card.split("\n")) {
       if (/^END:VCARD/i.test(line)) break;
@@ -79,13 +84,13 @@ function parseVcard(text: string, cap: number): ParsedContact[] {
       else if (prop === "EMAIL" && !email) email = value;
       else if (prop === "TITLE" && !title) title = value;
       else if (prop === "ORG" && !org) org = value.split(";")[0].trim();
+      else if (prop === "BDAY" && !bday) bday = value;
+      else if (prop === "URL" && !url) url = value;
+      else if (prop === "NOTE") rawNotes.push(value);
       else if (prop === "TEL") {
-        const isCell = params.some((p) => p.includes("CELL") || p.includes("MOBILE"));
-        // Prefer the first mobile number; otherwise keep the first number seen.
-        if (!tel || (isCell && !telIsCell)) {
-          tel = value;
-          telIsCell = isCell;
-        }
+        // Keep EVERY number — nothing dropped. Mobile numbers are marked so the
+        // primary can prefer a cell, but all are retained.
+        tels.push({ value: cleanPhone(value), cell: params.some((p) => p.includes("CELL") || p.includes("MOBILE")) });
       }
     }
 
@@ -101,15 +106,43 @@ function parseVcard(text: string, cap: number): ParsedContact[] {
       firstName = toks.shift() || "";
       lastName = toks.join(" ");
     }
-    // A contact with neither a name nor a phone/email isn't worth importing.
-    if (!firstName && !lastName && !tel && !email) continue;
+
+    // De-duplicate numbers while preserving order; primary prefers the first cell.
+    const seenTel = new Set<string>();
+    const uniqTels = tels.filter((t) => t.value && !seenTel.has(t.value) && seenTel.add(t.value));
+    const phones = uniqTels.map((t) => t.value);
+    const primaryIdx = uniqTels.findIndex((t) => t.cell);
+    const phone = primaryIdx >= 0 ? phones[primaryIdx] : phones[0] ?? "";
+
+    // A contact with neither a name nor a number/email isn't worth importing.
+    if (!firstName && !lastName && phones.length === 0 && !email) continue;
     if (!firstName && !lastName) firstName = "بدون‌نام";
     else if (!firstName) {
       firstName = lastName;
       lastName = "";
     }
 
-    out.push({ firstName, lastName, phone: cleanPhone(tel), email, title, company: org });
+    // Everything that doesn't have a dedicated CRM field goes into notes so no
+    // data is lost: any additional numbers, birthday, org, website, raw notes.
+    const noteParts: string[] = [];
+    const extraPhones = phones.filter((p) => p !== phone);
+    if (extraPhones.length) noteParts.push(`شماره‌های دیگر: ${extraPhones.join(" ، ")}`);
+    if (bday) noteParts.push(`تاریخ تولد: ${bday}`);
+    if (org) noteParts.push(`سازمان: ${org}`);
+    if (url) noteParts.push(`وب‌سایت: ${url}`);
+    for (const rn of rawNotes) noteParts.push(rn);
+
+    out.push({
+      firstName,
+      lastName,
+      phone,
+      phones,
+      email,
+      title,
+      company: org,
+      senf: "",
+      notes: noteParts.join("\n"),
+    });
   }
 
   return out;
@@ -148,10 +181,16 @@ function parseCsv(text: string, cap: number): ParsedContact[] {
   const iFirst = find("first name", "firstname", "given name");
   const iLast = find("last name", "lastname", "family name", "surname");
   const iName = iFirst < 0 && iLast < 0 ? find("name", "نام") : -1;
-  const iPhone = find("phone 1 - value", "mobile", "phone", "tel", "cell", "شماره", "موبایل", "تلفن");
   const iEmail = find("e-mail 1 - value", "email", "ایمیل");
   const iCompany = find("organization 1 - name", "company", "organization", "شرکت");
   const iTitle = find("organization 1 - title", "job title", "title", "سمت");
+  const iSenf = find("senf", "صنف", "category", "دسته");
+  const iNotes = find("notes", "note", "یادداشت", "توضیح");
+  // EVERY column that looks like a phone number — keep them all.
+  const phoneCols = header
+    .map((h, i) => ({ h, i }))
+    .filter(({ h }) => /(phone|mobile|tel|cell|شماره|موبایل|تلفن|همراه)/i.test(h))
+    .map(({ i }) => i);
 
   const out: ParsedContact[] = [];
   for (let r = 1; r < rows.length && out.length < cap; r++) {
@@ -164,11 +203,39 @@ function parseCsv(text: string, cap: number): ParsedContact[] {
       firstName = toks.shift() || "";
       lastName = toks.join(" ");
     }
-    const phone = cleanPhone(at(iPhone));
+    // Collect all numbers across every phone column (Google splits "Phone 1/2/3"
+    // and can pack several into one cell with ::: or /).
+    const rawNums: string[] = [];
+    for (const pi of phoneCols) {
+      for (const part of at(pi).split(/[;:/]{1,3}|\s{2,}/)) {
+        const cp = cleanPhone(part);
+        if (cp) rawNums.push(cp);
+      }
+    }
+    const seen = new Set<string>();
+    const phones = rawNums.filter((p) => !seen.has(p) && seen.add(p));
+    const phone = phones[0] ?? "";
     const email = at(iEmail);
-    if (!firstName && !lastName && !phone && !email) continue;
+    if (!firstName && !lastName && phones.length === 0 && !email) continue;
     if (!firstName && !lastName) firstName = "بدون‌نام";
-    out.push({ firstName, lastName, phone, email, title: at(iTitle), company: at(iCompany) });
+
+    const noteParts: string[] = [];
+    const extraPhones = phones.slice(1);
+    if (extraPhones.length) noteParts.push(`شماره‌های دیگر: ${extraPhones.join(" ، ")}`);
+    const existingNote = at(iNotes);
+    if (existingNote) noteParts.push(existingNote);
+
+    out.push({
+      firstName,
+      lastName,
+      phone,
+      phones,
+      email,
+      title: at(iTitle),
+      company: at(iCompany),
+      senf: at(iSenf),
+      notes: noteParts.join("\n"),
+    });
   }
   return out;
 }

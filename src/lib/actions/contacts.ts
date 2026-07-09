@@ -184,9 +184,12 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
       const data = toInsert.slice(i, i + CHUNK).map((c) => ({
         firstName: (c.firstName || "بدون‌نام").slice(0, 100),
         lastName: c.lastName.slice(0, 100),
+        // Primary number in phone; every extra number is preserved in notes.
         phone: c.phone ? c.phone.slice(0, 40) : null,
         email: c.email ? c.email.slice(0, 200) : null,
         title: c.title ? c.title.slice(0, 200) : null,
+        senf: c.senf ? c.senf.slice(0, 120) : null,
+        notes: c.notes ? c.notes.slice(0, 10000) : null,
         ownerId: user.id,
       }));
       const res = await prisma.contact.createMany({ data });
