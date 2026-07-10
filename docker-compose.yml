@@ -67,8 +67,10 @@ services:
       MELIPAYAMAK_USERNAME: ${MELIPAYAMAK_USERNAME:-}
       MELIPAYAMAK_PASSWORD: ${MELIPAYAMAK_PASSWORD:-}
       MELIPAYAMAK_SENDER: ${MELIPAYAMAK_SENDER:-}
-      # Secret guarding the SMS cron endpoint (/api/cron/send-sms).
+      # Secret guarding the cron endpoints (SMS + user purge).
       CRON_SECRET: ${CRON_SECRET:-}
+      # Auto-delete accounts deactivated longer than this many days (0 disables).
+      PURGE_DEACTIVATED_DAYS: ${PURGE_DEACTIVATED_DAYS:-30}
     ports:
       # Bound to loopback only — the public reaches the app through Nginx/HTTPS,
       # never directly (Docker would otherwise bypass the host firewall).
@@ -91,7 +93,7 @@ services:
     command:
       - node
       - -e
-      - "const tick=()=>fetch('http://app:3000/api/cron/send-sms',{method:'POST',headers:{'x-cron-secret':process.env.CRON_SECRET||''}}).catch(()=>{});setInterval(tick,60000);tick();"
+      - "const hit=(p)=>fetch('http://app:3000/api/cron/'+p,{method:'POST',headers:{'x-cron-secret':process.env.CRON_SECRET||''}}).catch(()=>{});setInterval(()=>hit('send-sms'),60000);hit('send-sms');setInterval(()=>hit('purge-users'),86400000);setTimeout(()=>hit('purge-users'),120000);"
 
   # Restarts any container marked unhealthy (e.g. a hung app) automatically.
   autoheal:

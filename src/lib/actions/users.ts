@@ -121,9 +121,12 @@ export async function toggleUserActive(id: string): Promise<FormResult> {
     // Server decides the next state (don't trust the client) and guards last owner.
     if (target.isActive) await assertNotLastOwner(id);
 
+    const nextActive = !target.isActive;
     await prisma.user.update({
       where: { id },
-      data: { isActive: !target.isActive },
+      // Stamp the deactivation time (cleared on reactivate) so the purge job
+      // can auto-delete accounts that stay deactivated past the grace window.
+      data: { isActive: nextActive, deactivatedAt: nextActive ? null : new Date() },
     });
     revalidatePath("/settings/users");
   } catch (e) {
