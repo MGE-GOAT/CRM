@@ -25,13 +25,15 @@ export type DealCard = {
   editValues: DealValues;
 };
 
+// Stage dot colors mirror the StageBadge palette so a LEAD dot on the board
+// reads as the same stage the badge shows elsewhere.
 const COLUMNS = [
-  { key: "LEAD", label: stageLabel.LEAD, color: "#9aa0a6" },
-  { key: "QUALIFIED", label: stageLabel.QUALIFIED, color: "#0ea5e9" },
-  { key: "PROPOSAL", label: stageLabel.PROPOSAL, color: "#d4af37" },
-  { key: "NEGOTIATION", label: stageLabel.NEGOTIATION, color: "#8b5cf6" },
-  { key: "WON", label: stageLabel.WON, color: "#10b981" },
-  { key: "LOST", label: stageLabel.LOST, color: "#ef4444" },
+  { key: "LEAD", label: stageLabel.LEAD, color: "#4b5563" },
+  { key: "QUALIFIED", label: stageLabel.QUALIFIED, color: "#0369a1" },
+  { key: "PROPOSAL", label: stageLabel.PROPOSAL, color: "#92600a" },
+  { key: "NEGOTIATION", label: stageLabel.NEGOTIATION, color: "#6d28d9" },
+  { key: "WON", label: stageLabel.WON, color: "#047857" },
+  { key: "LOST", label: stageLabel.LOST, color: "#b91c1c" },
 ];
 
 export function KanbanBoard({
@@ -96,43 +98,44 @@ export function KanbanBoard({
             }}
             onDragLeave={() => setOverCol((c) => (c === col.key ? null : c))}
             onDrop={() => onDrop(col.key)}
-            className={`flex w-[82vw] max-w-xs shrink-0 flex-col rounded-xl border bg-surface-2/60 transition sm:w-72 ${
+            className={`flex w-[82vw] max-w-xs shrink-0 flex-col rounded-2xl border bg-surface-2/50 transition-colors sm:w-72 ${
               overCol === col.key
-                ? "border-[var(--brand)] bg-brand-50"
+                ? "border-[var(--gold-mid)] bg-[var(--gold-tint)]"
                 : "border-border"
             }`}
           >
-            <div className="flex items-center justify-between px-3 py-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: col.color }}
+                  aria-hidden="true"
                 />
-                <span className="text-sm font-semibold">{col.label}</span>
-                <span className="rounded-full bg-surface-3 px-1.5 text-xs text-muted">
+                <span className="truncate text-sm font-bold tracking-tight">{col.label}</span>
+                <span className="rounded-full bg-surface-3 px-1.5 py-0.5 text-[11px] font-medium text-muted">
                   {formatNumber(colDeals.length)}
                 </span>
               </div>
-              <span className="text-xs text-muted">
+              <span className="shrink-0 text-xs font-medium text-muted">
                 {formatToman(total)}
               </span>
             </div>
 
-            <div className="flex-1 space-y-2 overflow-y-auto px-2 pb-3">
+            <div className="flex-1 space-y-2 overflow-y-auto px-2 py-2.5">
               {colDeals.map((d) => (
                 <div
                   key={d.id}
                   draggable
                   onDragStart={() => setDragId(d.id)}
                   onDragEnd={() => setDragId(null)}
-                  className={`group cursor-grab rounded-lg border border-border bg-surface p-3 shadow-sm transition active:cursor-grabbing ${
+                  className={`group cursor-grab rounded-xl border border-border bg-surface p-3 shadow-[var(--shadow-sm)] transition hover:bg-[var(--gold-tint)] hover:shadow-[var(--shadow-md)] active:cursor-grabbing ${
                     dragId === d.id ? "opacity-50" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-1">
                     <Link
                       href={`/deals/${d.id}`}
-                      className="text-sm font-medium leading-snug hover:text-[var(--brand)] hover:underline"
+                      className="text-sm font-medium leading-snug hover:text-[color:var(--gold-ink)]"
                     >
                       {d.title}
                     </Link>
@@ -153,7 +156,7 @@ export function KanbanBoard({
                     </p>
                   )}
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-[var(--brand)]">
+                    <span className="text-sm font-semibold text-[color:var(--gold-ink)]">
                       {formatToman(d.value)}
                     </span>
                     <div className="flex items-center gap-2">
@@ -180,7 +183,7 @@ export function KanbanBoard({
                 </div>
               ))}
               {colDeals.length === 0 && (
-                <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-8 text-xs text-muted">
+                <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-8 text-xs text-muted">
                   <GripVertical size={14} aria-hidden="true" className="me-1" /> معامله‌ای را اینجا رها کنید
                 </div>
               )}

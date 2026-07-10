@@ -13,45 +13,64 @@ export default async function LoginPage() {
   const year = new Date().toLocaleDateString("fa-IR", { calendar: "persian", year: "numeric" });
 
   return (
-    <main className="min-h-screen grid lg:grid-cols-2">
-      {/* Right (RTL start): brand panel */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-sidebar-bg p-12 text-white">
+    <main className="grid min-h-screen lg:grid-cols-[1.15fr_1fr]">
+      {/* Brand strip (RTL start) — warm charcoal, gold atmosphere */}
+      <div className="relative hidden overflow-hidden bg-sidebar-bg p-12 text-sidebar-text lg:flex lg:flex-col lg:justify-between">
         <div
-          className="absolute inset-0 opacity-40"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage:
-              "radial-gradient(circle at 80% 15%, rgba(212,175,55,.28), transparent 45%), radial-gradient(circle at 20% 85%, rgba(212,175,55,.16), transparent 45%)",
+            background:
+              "radial-gradient(115% 80% at 88% 8%, rgba(226,181,93,0.22), transparent 55%), radial-gradient(90% 85% at 5% 100%, rgba(226,181,93,0.10), transparent 55%)",
           }}
         />
         <div className="relative">
           <Logo width={170} />
         </div>
         <div className="relative max-w-md">
-          <h1 className="text-4xl font-bold leading-snug">
+          <div
+            aria-hidden="true"
+            className="mb-6 h-[3px] w-14 rounded-full"
+            style={{
+              background:
+                "linear-gradient(90deg, var(--gold-from), var(--gold-mid) 55%, var(--gold-to))",
+            }}
+          />
+          <h1 className="text-4xl font-bold leading-snug tracking-tight">
             هرآنچه تیم شما برای پیشبرد معاملات نیاز دارد.
           </h1>
-          <p className="mt-4 text-white/65 leading-relaxed">
+          <p className="mt-4 leading-relaxed text-sidebar-muted">
             مخاطبین، فروش، وظایف، گزارش‌ها و گفتگوی تیمی — همه در یک فضای
             کاری مشترک.
           </p>
         </div>
-        <div className="relative text-sm text-white/40">
+        <div className="relative text-sm text-sidebar-muted">
           © {toFa(year)} اسپان هلدینگ
         </div>
       </div>
 
-      {/* Left (RTL end): entry form */}
-      <div className="flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-sm animate-in">
-          <div className="lg:hidden mb-8 flex justify-center">
+      {/* Entry form (RTL end) — warm paper + floated auth panel */}
+      <div className="relative flex items-center justify-center overflow-hidden p-6 sm:p-12">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(70% 60% at 100% 0%, rgba(226,181,93,0.10), transparent 60%)",
+          }}
+        />
+        <div className="relative w-full max-w-sm animate-in">
+          <div className="mb-8 flex justify-center lg:hidden">
             <Logo width={150} />
           </div>
-          <h2 className="text-2xl font-bold">خوش آمدید</h2>
-          <p className="mt-1 text-sm text-muted">
-            برای ادامه، وارد حساب کاربری خود شوید.
-          </p>
-          <div className="mt-8">
-            <LoginForm />
+          <div className="panel p-7 sm:p-8">
+            <h2 className="text-2xl font-bold tracking-tight">خوش آمدید</h2>
+            <p className="mt-1.5 text-sm text-muted">
+              برای ادامه، وارد حساب کاربری خود شوید.
+            </p>
+            <div className="mt-7">
+              <LoginForm />
+            </div>
           </div>
         </div>
       </div>

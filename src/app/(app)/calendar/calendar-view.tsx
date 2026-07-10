@@ -128,7 +128,7 @@ export function CalendarView({
             ماه بعد
           </button>
         </div>
-        <h2 className="text-lg font-bold">
+        <h2 className="text-lg font-bold tracking-tight">
           {view.month.name} {toFa(view.year)}
         </h2>
         <button
@@ -140,9 +140,9 @@ export function CalendarView({
       </div>
 
       {/* Grid */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
        <div className="min-w-[680px] md:min-w-0">
-        <div className="grid grid-cols-7 border-b border-border bg-surface-2 text-center text-xs font-medium text-muted">
+        <div className="grid grid-cols-7 border-b-2 border-[color:var(--rule)] bg-surface-2 text-center text-xs font-medium tracking-wide text-muted">
           {WEEKDAYS.map((w) => (
             <div key={w} className="px-1 py-2">{w}</div>
           ))}
@@ -156,12 +156,18 @@ export function CalendarView({
             return (
               <div
                 key={key}
-                className="min-h-24 border-b border-s border-border p-1 transition hover:bg-[var(--gold-tint)]"
+                className={`min-h-24 border-b border-s border-border p-1 transition ${
+                  isToday
+                    ? "bg-[var(--gold-tint)] hover:bg-[var(--gold-tint-strong)]"
+                    : "hover:bg-[var(--gold-tint)]"
+                }`}
               >
                 <div className="flex items-center justify-between px-1">
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full text-xs ${
-                      isToday ? "bg-[var(--brand)] font-bold text-white" : "text-muted"
+                      isToday
+                        ? "bg-[var(--gold-tint-strong)] font-bold text-[color:var(--gold-ink)] ring-1 ring-[var(--gold-mid)]"
+                        : "text-muted"
                     }`}
                   >
                     {toFa(day)}
@@ -179,7 +185,7 @@ export function CalendarView({
                     <button
                       key={r.id}
                       onClick={() => setModal({ type: "detail", reminder: r })}
-                      className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-right text-[11px] hover:brightness-95"
+                      className="flex w-full items-center gap-1 rounded-md px-1 py-0.5 text-right text-[11px] hover:brightness-95"
                       style={{ backgroundColor: `${r.color}22` }}
                     >
                       <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
@@ -248,7 +254,7 @@ function Overlay({ title, onClose, children }: { title: string; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" className="relative z-10 my-8 w-full max-w-md animate-in rounded-2xl bg-surface shadow-xl">
+      <div role="dialog" aria-modal="true" className="panel relative z-10 my-8 w-full max-w-md animate-in">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h3 className="font-semibold">{title}</h3>
           <button onClick={onClose} aria-label="بستن" className="rounded-lg p-1 text-muted hover:bg-[var(--gold-tint)]">
@@ -311,7 +317,7 @@ function DetailBody({
       {phone && r.action !== "GENERAL" && (
         <div className="flex flex-wrap gap-2">
           {r.action === "CALL" && (
-            <a href={`tel:${phone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-white">
+            <a href={`tel:${phone}`} className="btn-gold inline-flex items-center gap-1.5 rounded-lg px-3 py-2">
               <Phone size={15} /> تماس
             </a>
           )}
@@ -321,7 +327,7 @@ function DetailBody({
             </a>
           )}
           {r.action === "SMS" && (
-            <a href={`sms:${phone}${smsBody}`} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-white">
+            <a href={`sms:${phone}${smsBody}`} className="btn-gold inline-flex items-center gap-1.5 rounded-lg px-3 py-2">
               <Send size={15} /> ارسال پیامک
             </a>
           )}
@@ -336,7 +342,7 @@ function DetailBody({
           <button onClick={onEdit} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             <Pencil size={15} /> ویرایش
           </button>
-          <button onClick={onDelete} className="ms-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+          <button onClick={onDelete} className="ms-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10">
             <Trash2 size={15} /> حذف
           </button>
         </div>

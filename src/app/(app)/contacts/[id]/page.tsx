@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Mail, Phone, Building2, Briefcase, Tag } from "lucide-react";
+import { ArrowRight, Mail, Phone, Building2, Briefcase } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
-import { StageBadge } from "@/components/ui/badge";
+import { StageBadge, SenfPill } from "@/components/ui/badge";
 import { LogActivity } from "@/components/log-activity";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { formatToman, formatNumber, formatDate, toFa } from "@/lib/format";
@@ -51,17 +51,28 @@ export default async function ContactDetailPage({
     <div className="p-4 sm:p-6">
       <Link
         href="/contacts"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-text"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-[var(--brand)]"
       >
-        <ArrowRight size={16} /> بازگشت به مخاطبین
+        <ArrowRight size={16} aria-hidden="true" /> بازگشت به مخاطبین
       </Link>
 
       {/* 360° summary */}
       <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
         {summary.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-surface p-3 text-center sm:p-4">
-            <div className="text-sm font-bold leading-tight tabular-nums sm:text-xl">{s.value}</div>
-            <div className="mt-0.5 text-xs text-muted">{s.label}</div>
+          <div
+            key={s.label}
+            className="rounded-2xl border border-border bg-surface p-4 text-center shadow-[var(--shadow-sm)]"
+          >
+            <div className="text-lg font-bold tracking-tight tabular-nums sm:text-2xl">
+              {s.value}
+            </div>
+            <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-[var(--gold-mid)]"
+                aria-hidden="true"
+              />
+              {s.label}
+            </div>
           </div>
         ))}
       </div>
@@ -69,71 +80,76 @@ export default async function ContactDetailPage({
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: profile */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <div className="flex items-center gap-3">
+          <div className="panel p-5">
+            <div className="flex items-start gap-4">
               <Avatar
                 name={`${contact.firstName} ${contact.lastName}`}
                 color={contact.owner.avatarColor}
-                size={52}
+                size={56}
               />
-              <div>
-                <h1 className="text-lg font-bold">
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold tracking-tight">
                   {contact.firstName} {contact.lastName}
                 </h1>
                 {contact.title && (
-                  <p className="text-sm text-muted">{contact.title}</p>
+                  <p className="mt-0.5 text-sm text-muted">{contact.title}</p>
+                )}
+                {contact.senf && (
+                  <div className="mt-2">
+                    <SenfPill senf={contact.senf} />
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 text-sm">
+            <div className="mt-5 space-y-3 border-t border-border pt-4 text-sm">
               {contact.email && (
                 <div className="flex items-center gap-2">
-                  <Mail size={15} className="text-muted" />
-                  <a dir="ltr" href={`mailto:${contact.email}`} className="hover:text-[var(--brand)]">
+                  <Mail size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                  <a
+                    dir="ltr"
+                    href={`mailto:${contact.email}`}
+                    className="truncate transition-colors hover:text-[var(--brand)]"
+                  >
                     {contact.email}
                   </a>
                 </div>
               )}
               {contact.phone && (
                 <div className="flex items-center gap-2">
-                  <Phone size={15} className="text-muted" />
-                  <span dir="ltr">{toFa(contact.phone)}</span>
+                  <Phone size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                  <span dir="ltr" className="tabular-nums">{toFa(contact.phone)}</span>
                 </div>
               )}
               {contact.company && (
                 <div className="flex items-center gap-2">
-                  <Building2 size={15} className="text-muted" />
+                  <Building2 size={15} className="shrink-0 text-faint" aria-hidden="true" />
                   <Link
                     href={`/companies/${contact.company.id}`}
-                    className="hover:text-[var(--brand)]"
+                    className="truncate transition-colors hover:text-[var(--brand)]"
                   >
                     {contact.company.name}
                   </Link>
                 </div>
               )}
-              {contact.senf && (
-                <div className="flex items-center gap-2">
-                  <Tag size={15} className="text-muted" />
-                  صنف: {contact.senf}
-                </div>
-              )}
               <div className="flex items-center gap-2">
-                <Briefcase size={15} className="text-muted" />
-                مسئول: {contact.owner.name}
+                <Briefcase size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                <span className="text-muted">
+                  مسئول: <span className="text-text">{contact.owner.name}</span>
+                </span>
               </div>
             </div>
 
             {contact.notes && (
-              <div className="mt-4 rounded-lg bg-surface-2 p-3 text-sm text-muted">
+              <div className="mt-4 rounded-e-lg border-s-2 border-[color:var(--gold-hair)] bg-surface-2 p-3 text-sm text-muted">
                 {contact.notes}
               </div>
             )}
           </div>
 
           {/* Related deals */}
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">معاملات</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">معاملات</h2>
             {contact.deals.length === 0 ? (
               <p className="text-sm text-muted">هنوز معامله‌ای ثبت نشده است.</p>
             ) : (
@@ -141,10 +157,10 @@ export default async function ContactDetailPage({
                 {contact.deals.map((d) => (
                   <li
                     key={d.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
                   >
-                    <span className="font-medium">{d.title}</span>
-                    <span className="flex items-center gap-2">
+                    <span className="min-w-0 truncate font-medium">{d.title}</span>
+                    <span className="flex shrink-0 items-center gap-2">
                       <span className="text-muted">
                         {formatToman(Number(d.value))}
                       </span>
@@ -157,8 +173,8 @@ export default async function ContactDetailPage({
           </div>
 
           {/* Tasks */}
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">وظایف</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">وظایف</h2>
             {contact.tasks.length === 0 ? (
               <p className="text-sm text-muted">وظیفه‌ای ثبت نشده است.</p>
             ) : (
@@ -182,8 +198,8 @@ export default async function ContactDetailPage({
           </div>
 
           {/* Reminders */}
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">یادآوری‌ها</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">یادآوری‌ها</h2>
             {contact.reminders.length === 0 ? (
               <p className="text-sm text-muted">یادآوری‌ای ثبت نشده است.</p>
             ) : (
@@ -207,8 +223,8 @@ export default async function ContactDetailPage({
         {/* Right: activity */}
         <div className="space-y-4 lg:col-span-2">
           <LogActivity contactId={contact.id} />
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">تاریخچه فعالیت‌ها</h2>
+          <div className="panel p-5">
+            <h2 className="mb-4 font-bold tracking-tight">تاریخچه فعالیت‌ها</h2>
             <ActivityTimeline activities={contact.activities} />
           </div>
         </div>

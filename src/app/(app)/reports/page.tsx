@@ -32,11 +32,13 @@ export default async function ReportsPage() {
   const closedCount = won.length + lost.length;
   const winRate = closedCount ? Math.round((won.length / closedCount) * 100) : 0;
 
+  // The weighted forecast is the marquee figure — it gets the gold hero banner;
+  // the supporting KPIs are demoted to a row of warm, earthy tiles.
+  const heroKpi = { label: "پیش‌بینی فروش (وزنی)", value: formatToman(weighted), icon: Target, hint: "مجموع ارزش × احتمال معاملات باز" };
   const kpis = [
-    { label: "پیش‌بینی فروش (وزنی)", value: formatToman(weighted), icon: Target, accent: "#b08400", hint: "مجموع ارزش × احتمال معاملات باز" },
-    { label: "ارزش معاملات باز", value: formatToman(openValue), icon: Coins, accent: "#0ea5e9" },
-    { label: "درآمد موفق", value: formatToman(wonValue), icon: TrendingUp, accent: "#10b981" },
-    { label: "نرخ موفقیت", value: formatPercent(winRate), icon: Percent, accent: "#10b981", hint: "از معاملات بسته‌شده" },
+    { label: "ارزش معاملات باز", value: formatToman(openValue), icon: Coins, accent: "#8a6d3b" },
+    { label: "درآمد موفق", value: formatToman(wonValue), icon: TrendingUp, accent: "#047857" },
+    { label: "نرخ موفقیت", value: formatPercent(winRate), icon: Percent, accent: "#b08400", hint: "از معاملات بسته‌شده" },
   ];
 
   // ── Funnel (distribution by current stage) ────────────────────────
@@ -90,25 +92,41 @@ export default async function ReportsPage() {
     <div>
       <PageHeader title="گزارش‌ها و تحلیل فروش" subtitle="پیش‌بینی، قیف، عملکرد تیم و اثر کمپین‌ها" />
       <div className="space-y-6 p-4 sm:p-6">
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {kpis.map((k) => (
-            <div key={k.label} className="rounded-xl border border-border bg-surface p-4">
-              <div className="grid h-9 w-9 place-items-center rounded-lg" style={{ backgroundColor: `${k.accent}1a`, color: k.accent }}>
-                <k.icon size={18} />
+        {/* KPIs — gold forecast hero + demoted supporting tiles */}
+        <div className="space-y-4">
+          <div className="panel flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--gold-tint)] text-[color:var(--gold-ink)]">
+                <heroKpi.icon size={24} />
               </div>
-              <div className="mt-3 text-lg font-bold tabular-nums sm:text-2xl">{k.value}</div>
-              <div className="text-sm text-muted">{k.label}</div>
-              {k.hint && <div className="mt-0.5 text-xs text-muted">{k.hint}</div>}
+              <div>
+                <div className="text-sm font-medium text-muted">{heroKpi.label}</div>
+                {heroKpi.hint && <div className="mt-0.5 text-xs text-faint">{heroKpi.hint}</div>}
+              </div>
             </div>
-          ))}
+            <div className="text-3xl font-bold tracking-tight tabular-nums text-[color:var(--gold-ink)] sm:text-4xl">
+              {heroKpi.value}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {kpis.map((k) => (
+              <div key={k.label} className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
+                <div className="grid h-9 w-9 place-items-center rounded-lg" style={{ backgroundColor: `${k.accent}1a`, color: k.accent }}>
+                  <k.icon size={18} />
+                </div>
+                <div className="mt-3 text-lg font-bold tracking-tight tabular-nums sm:text-xl">{k.value}</div>
+                <div className="text-sm text-muted">{k.label}</div>
+                {k.hint && <div className="mt-0.5 text-xs text-faint">{k.hint}</div>}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Funnel */}
-          <section className="rounded-xl border border-border bg-surface">
+          <section className="panel">
             <div className="border-b border-border px-5 py-4">
-              <h2 className="font-semibold">قیف فروش</h2>
+              <h2 className="font-bold tracking-tight">قیف فروش</h2>
             </div>
             <div className="space-y-3 p-5">
               {funnel.map((f) => (
@@ -129,7 +147,13 @@ export default async function ReportsPage() {
                   >
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${(f.count / funnelMax) * 100}%`, backgroundColor: f.stage === "WON" ? "#10b981" : "var(--brand)" }}
+                      style={{
+                        width: `${(f.count / funnelMax) * 100}%`,
+                        background:
+                          f.stage === "WON"
+                            ? "#10b981"
+                            : "linear-gradient(90deg, var(--gold-from), var(--gold-to))",
+                      }}
                     />
                   </div>
                 </div>
@@ -138,9 +162,9 @@ export default async function ReportsPage() {
           </section>
 
           {/* Campaign attribution */}
-          <section className="rounded-xl border border-border bg-surface">
+          <section className="panel">
             <div className="border-b border-border px-5 py-4">
-              <h2 className="font-semibold">اثر کمپین‌ها (منبع)</h2>
+              <h2 className="font-bold tracking-tight">اثر کمپین‌ها (منبع)</h2>
             </div>
             <div className="space-y-3 p-5">
               {campaigns.length === 0 && <p className="text-sm text-muted">داده‌ای نیست.</p>}
@@ -160,7 +184,13 @@ export default async function ReportsPage() {
                     aria-valuemin={0}
                     aria-valuemax={Math.round(campaignMax)}
                   >
-                    <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${((c.wonValue || c.total) / campaignMax) * 100}%` }} />
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${((c.wonValue || c.total) / campaignMax) * 100}%`,
+                        background: "linear-gradient(90deg, var(--gold-from), var(--gold-to))",
+                      }}
+                    />
                   </div>
                 </div>
               ))}
@@ -169,12 +199,12 @@ export default async function ReportsPage() {
         </div>
 
         {/* Team performance */}
-        <section className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <section className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="font-semibold">عملکرد تیم فروش</h2>
+            <h2 className="font-bold tracking-tight">عملکرد تیم فروش</h2>
           </div>
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b border-border bg-surface-2 text-right text-xs text-muted">
+            <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">
               <tr>
                 <th className="px-5 py-3 font-medium">عضو</th>
                 <th className="px-4 py-3 font-medium">درآمد موفق</th>

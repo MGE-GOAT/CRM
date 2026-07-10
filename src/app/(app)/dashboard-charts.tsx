@@ -14,7 +14,20 @@ import {
 } from "recharts";
 import { formatToman, formatNumber, toFa } from "@/lib/format";
 
-const STAGE_COLORS = ["#9aa0a6", "#0ea5e9", "#d4af37", "#8b5cf6"];
+// Warm gold + earthy material ramp (bronze → ochre → brand gold → copper),
+// so the pipeline reads as one on-brand palette instead of stock chart colors.
+const STAGE_COLORS = ["#a0885a", "#c9973c", "#e2b55d", "#9c5f2b"];
+
+const AXIS_TICK = "var(--muted)";
+const TOOLTIP_STYLE = {
+  fontFamily: "var(--font-vazir)",
+  direction: "rtl" as const,
+  background: "var(--surface)",
+  border: "1px solid var(--border)",
+  borderRadius: 12,
+  boxShadow: "var(--shadow-md)",
+  color: "var(--text)",
+};
 
 export function DashboardCharts({
   stageData,
@@ -25,27 +38,29 @@ export function DashboardCharts({
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <div className="rounded-xl border border-border bg-surface p-5 lg:col-span-2">
-        <h2 className="mb-4 font-semibold">ارزش معاملات بر اساس مرحله</h2>
+      <div className="panel p-5 lg:col-span-2">
+        <h2 className="mb-4 font-bold tracking-tight">ارزش معاملات بر اساس مرحله</h2>
         <div className="h-56 sm:h-64" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stageData}>
               <XAxis
                 dataKey="stage"
-                tick={{ fontSize: 12, fill: "#6b7280", fontFamily: "var(--font-vazir)" }}
+                tick={{ fontSize: 12, fill: AXIS_TICK, fontFamily: "var(--font-vazir)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "#6b7280" }}
+                tick={{ fontSize: 12, fill: AXIS_TICK }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => toFa(`${(v / 1_000_000).toFixed(0)}م`)}
               />
               <Tooltip
                 formatter={(v) => [formatToman(Number(v)), "ارزش"]}
-                cursor={{ fill: "#f3f4f6" }}
-                contentStyle={{ fontFamily: "var(--font-vazir)", direction: "rtl" }}
+                cursor={{ fill: "var(--gold-tint)" }}
+                contentStyle={TOOLTIP_STYLE}
+                itemStyle={{ color: "var(--text)" }}
+                labelStyle={{ color: "var(--muted)" }}
               />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                 {stageData.map((_, i) => (
@@ -57,8 +72,8 @@ export function DashboardCharts({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-5">
-        <h2 className="mb-4 font-semibold">معاملات بر اساس مرحله</h2>
+      <div className="panel p-5">
+        <h2 className="mb-4 font-bold tracking-tight">معاملات بر اساس مرحله</h2>
         <div className="h-56 sm:h-64" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -78,11 +93,13 @@ export function DashboardCharts({
               </Pie>
               <Legend
                 iconType="circle"
-                wrapperStyle={{ fontSize: 12, fontFamily: "var(--font-vazir)" }}
+                wrapperStyle={{ fontSize: 12, fontFamily: "var(--font-vazir)", color: "var(--muted)" }}
               />
               <Tooltip
                 formatter={(v) => [formatNumber(Number(v)), "تعداد"]}
-                contentStyle={{ fontFamily: "var(--font-vazir)", direction: "rtl" }}
+                contentStyle={TOOLTIP_STYLE}
+                itemStyle={{ color: "var(--text)" }}
+                labelStyle={{ color: "var(--muted)" }}
               />
             </PieChart>
           </ResponsiveContainer>

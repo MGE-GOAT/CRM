@@ -11,7 +11,7 @@ function SendButton() {
     <button
       type="submit"
       disabled={pending}
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--brand)] text-white transition hover:bg-[var(--brand-600)] disabled:opacity-60"
+      className="btn-gold grid h-10 w-10 shrink-0 place-items-center rounded-lg"
       aria-label="ارسال پیام"
     >
       <Send size={16} aria-hidden="true" />

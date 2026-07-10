@@ -84,10 +84,10 @@ export function InvoiceBuilder({
 
   if (!open) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-5">
+      <div className="panel p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold">فاکتور فروش</h2>
+            <h2 className="font-bold tracking-tight">فاکتور فروش</h2>
             <p className="mt-0.5 text-sm text-muted">صدور فاکتور برای این معامله و دریافت خروجی PDF.</p>
           </div>
           <button
@@ -103,12 +103,16 @@ export function InvoiceBuilder({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5">
+    <div className="panel p-5">
       {/* ---- Editable form (hidden on print) ---- */}
       <div className="no-print space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">ویرایش فاکتور فروش</h2>
-          <button type="button" onClick={() => setOpen(false)} className="text-sm text-muted hover:text-text">
+          <h2 className="font-bold tracking-tight">ویرایش فاکتور فروش</h2>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-muted hover:bg-[var(--gold-tint)] hover:text-text"
+          >
             بستن
           </button>
         </div>
@@ -124,7 +128,7 @@ export function InvoiceBuilder({
           </label>
         </div>
 
-        <fieldset className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-2">
+        <fieldset className="grid gap-3 rounded-xl border border-border bg-surface-2 p-3 sm:grid-cols-2">
           <legend className="px-1 text-xs font-medium text-muted">فروشنده</legend>
           <input placeholder="نام فروشنده" value={seller.name} onChange={(e) => setSeller({ ...seller, name: e.target.value })} className={inputBase} />
           <input placeholder="کد اقتصادی" dir="ltr" value={seller.economicCode} onChange={(e) => setSeller({ ...seller, economicCode: e.target.value })} className={inputBase} />
@@ -132,7 +136,7 @@ export function InvoiceBuilder({
           <input placeholder="نشانی" value={seller.address} onChange={(e) => setSeller({ ...seller, address: e.target.value })} className={inputBase} />
         </fieldset>
 
-        <fieldset className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-2">
+        <fieldset className="grid gap-3 rounded-xl border border-border bg-surface-2 p-3 sm:grid-cols-2">
           <legend className="px-1 text-xs font-medium text-muted">خریدار</legend>
           <input placeholder="نام شخص / شرکت" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} className={inputBase} />
           <input placeholder="کد اقتصادی" dir="ltr" value={buyerEco} onChange={(e) => setBuyerEco(e.target.value)} className={inputBase} />

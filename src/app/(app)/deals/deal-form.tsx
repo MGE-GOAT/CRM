@@ -49,7 +49,7 @@ export function DealForm({
         ) : (
           <button
             onClick={open}
-            className="rounded p-1 text-muted hover:bg-[var(--gold-tint)] hover:text-text"
+            className="rounded-lg p-1 text-muted hover:bg-[var(--gold-tint)] hover:text-text"
             aria-label="ویرایش معامله"
             title="ویرایش"
           >

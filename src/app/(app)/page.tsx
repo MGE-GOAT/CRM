@@ -51,24 +51,37 @@ export default async function DashboardPage() {
     };
   });
 
+  // One promoted "hero" figure (the active pipeline) carries the gold; the rest
+  // are demoted to compact tiles with a warm, earthy material accent each.
+  const heroStat = { label: "معاملات باز", value: formatToman(openValue), icon: Coins };
   const stats = [
-    { label: "معاملات باز", value: formatToman(openValue), icon: Coins, accent: "#b08400" },
-    { label: "درآمد موفق", value: formatToman(wonValue), icon: TrendingUp, accent: "#10b981" },
-    { label: "مخاطبین", value: formatNumber(contactCount), icon: Users, accent: "#0ea5e9" },
-    { label: "شرکت‌ها", value: formatNumber(companyCount), icon: Building2, accent: "#d4af37" },
-    { label: "وظایف باز", value: formatNumber(openTasks), icon: CheckSquare, accent: "#ec4899" },
+    { label: "درآمد موفق", value: formatToman(wonValue), icon: TrendingUp, accent: "#047857" },
+    { label: "مخاطبین", value: formatNumber(contactCount), icon: Users, accent: "#8a6d3b" },
+    { label: "شرکت‌ها", value: formatNumber(companyCount), icon: Building2, accent: "#a15c38" },
+    { label: "وظایف باز", value: formatNumber(openTasks), icon: CheckSquare, accent: "#b45309" },
   ];
 
   return (
     <div>
       <PageHeader title="داشبورد" subtitle="نمای کلی فروش تیم شما" />
       <div className="space-y-6 p-4 sm:p-6">
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {/* Stat cards — one gold hero + four demoted tiles */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="panel col-span-2 flex flex-col justify-between gap-6 p-5 lg:row-span-2 lg:p-6">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--gold-tint)] text-[color:var(--gold-ink)]">
+              <heroStat.icon size={22} />
+            </div>
+            <div>
+              <div className="text-3xl font-bold tracking-tight text-[color:var(--gold-ink)] sm:text-4xl">
+                {heroStat.value}
+              </div>
+              <div className="mt-1 text-sm font-medium text-muted">{heroStat.label}</div>
+            </div>
+          </div>
           {stats.map((s) => (
             <div
               key={s.label}
-              className="rounded-xl border border-border bg-surface p-4"
+              className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]"
             >
               <div
                 className="grid h-9 w-9 place-items-center rounded-lg"
@@ -76,7 +89,7 @@ export default async function DashboardPage() {
               >
                 <s.icon size={18} />
               </div>
-              <div className="mt-3 text-2xl font-bold">{s.value}</div>
+              <div className="mt-3 text-xl font-bold tracking-tight">{s.value}</div>
               <div className="text-sm text-muted">{s.label}</div>
             </div>
           ))}
@@ -86,9 +99,9 @@ export default async function DashboardPage() {
         <DashboardCharts stageData={stageData} />
 
         {/* Recent activity */}
-        <div className="rounded-xl border border-border bg-surface">
+        <div className="panel">
           <div className="border-b border-border px-5 py-4">
-            <h2 className="font-semibold">فعالیت‌های اخیر</h2>
+            <h2 className="font-bold tracking-tight">فعالیت‌های اخیر</h2>
           </div>
           <ul className="divide-y divide-border">
             {recentActivities.length === 0 && (

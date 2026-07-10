@@ -18,7 +18,7 @@ function SubmitButton() {
 }
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-left outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20";
+  "mt-1.5 w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-start text-sm outline-none transition placeholder:text-faint focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/40";
 
 export function LoginForm() {
   const [state, formAction] = useActionState(authenticate, undefined);
@@ -118,7 +118,7 @@ export function LoginForm() {
               onClick={handleRefresh}
               disabled={isRefreshing}
               aria-label="تصویر جدید"
-              className="rounded-lg border border-border px-2.5 py-2 text-sm text-muted hover:bg-surface disabled:opacity-50"
+              className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm text-muted transition hover:bg-[var(--gold-tint)] disabled:opacity-50"
             >
               ⟳
             </button>

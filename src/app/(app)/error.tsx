@@ -10,7 +10,7 @@ export default function AppError({ reset }: { error: Error & { digest?: string }
       <div className="grid h-14 w-14 place-items-center rounded-full bg-red-50 text-red-600">
         <AlertTriangle size={26} aria-hidden="true" />
       </div>
-      <h1 className="text-xl font-bold">مشکلی پیش آمد</h1>
+      <h1 className="text-xl font-bold tracking-tight">مشکلی پیش آمد</h1>
       <p className="max-w-md text-sm text-muted">
         متأسفیم، خطایی رخ داد. لطفاً دوباره تلاش کنید. اگر مشکل ادامه داشت، چند لحظه بعد دوباره امتحان کنید.
       </p>

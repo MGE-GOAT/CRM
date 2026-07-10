@@ -67,46 +67,53 @@ export default async function DealDetailPage({
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Deal summary */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-surface p-5">
+          <div className="panel p-5">
             <div className="flex items-start justify-between gap-2">
-              <h1 className="text-lg font-bold">{deal.title}</h1>
+              <h1 className="text-lg font-bold tracking-tight">{deal.title}</h1>
               <StageBadge stage={deal.stage} />
             </div>
-            <div className="mt-4 text-2xl font-bold text-[var(--brand)]">
+            <div className="mt-4 text-2xl font-bold text-[color:var(--gold-ink)]">
               {formatToman(Number(deal.value))}
             </div>
 
             <div className="mt-5 space-y-3 text-sm">
-              <div className="flex items-center gap-2">
-                <Briefcase size={15} className="text-muted" />
-                احتمال موفقیت: {formatPercent(deal.probability)}
+              <div className="flex items-center gap-2.5">
+                <Briefcase size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                <span className="text-muted">احتمال موفقیت</span>
+                <span className="ms-auto font-medium">{formatPercent(deal.probability)}</span>
               </div>
               {deal.company && (
-                <div className="flex items-center gap-2">
-                  <Building2 size={15} className="text-muted" />
-                  {deal.company.name}
+                <div className="flex items-center gap-2.5">
+                  <Building2 size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                  <span className="min-w-0 truncate font-medium">{deal.company.name}</span>
                 </div>
               )}
               {deal.contact && (
-                <div className="flex items-center gap-2">
-                  <User size={15} className="text-muted" />
-                  {deal.contact.firstName} {deal.contact.lastName}
+                <div className="flex items-center gap-2.5">
+                  <User size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                  <span className="min-w-0 truncate font-medium">
+                    {deal.contact.firstName} {deal.contact.lastName}
+                  </span>
                 </div>
               )}
               {deal.expectedCloseDate && (
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={15} className="text-muted" />
-                  تاریخ بستن: {formatDate(deal.expectedCloseDate)}
+                <div className="flex items-center gap-2.5">
+                  <CalendarDays size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                  <span className="text-muted">تاریخ بستن</span>
+                  <span className="ms-auto font-medium">{formatDate(deal.expectedCloseDate)}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <Briefcase size={15} className="text-muted" />
-                مسئول: {deal.owner.name}
+              <div className="flex items-center gap-2.5">
+                <Briefcase size={15} className="shrink-0 text-faint" aria-hidden="true" />
+                <span className="text-muted">مسئول</span>
+                <span className="ms-auto font-medium">{deal.owner.name}</span>
               </div>
             </div>
 
             {deal.notes && (
-              <div className="mt-4 rounded-lg bg-surface-2 p-3 text-sm text-muted">{deal.notes}</div>
+              <p className="mt-4 whitespace-pre-line rounded-lg border-s-2 border-[color:var(--gold-hair)] bg-surface-2 p-3 text-sm leading-relaxed text-muted">
+                {deal.notes}
+              </p>
             )}
           </div>
         </div>

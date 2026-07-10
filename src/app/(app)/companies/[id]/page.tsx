@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Globe, Phone, MapPin } from "lucide-react";
+import { ArrowRight, Building2, Globe, Phone, MapPin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/ui/avatar";
-import { StageBadge } from "@/components/ui/badge";
+import { StageBadge, SenfPill } from "@/components/ui/badge";
 import { LogActivity } from "@/components/log-activity";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { safeUrl } from "@/lib/utils";
@@ -53,19 +53,35 @@ export default async function CompanyDetailPage({
       {/* 360° summary */}
       <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
         {summary.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-surface p-3 text-center sm:p-4">
-            <div className="text-sm font-bold leading-tight tabular-nums sm:text-xl">{s.value}</div>
-            <div className="mt-0.5 text-xs text-muted">{s.label}</div>
+          <div
+            key={s.label}
+            className="rounded-2xl border border-border bg-surface p-3 text-center shadow-[var(--shadow-md)] sm:p-4"
+          >
+            <div className="text-sm font-bold leading-tight tracking-tight tabular-nums sm:text-xl">
+              {s.value}
+            </div>
+            <div className="mt-1 text-xs text-muted">{s.label}</div>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h1 className="text-lg font-bold">{company.name}</h1>
-            <p className="text-sm text-muted">{company.industry ?? "—"}</p>
-            {company.senf && <p className="text-sm text-muted">صنف: {company.senf}</p>}
+          <div className="panel p-5">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-[var(--brand)]">
+                <Building2 size={20} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold tracking-tight">{company.name}</h1>
+                <p className="text-sm text-muted">{company.industry ?? "—"}</p>
+              </div>
+            </div>
+            {company.senf && (
+              <div className="mt-3">
+                <SenfPill senf={company.senf} />
+              </div>
+            )}
 
             <div className="mt-5 space-y-3 text-sm">
               {safeUrl(company.website) && (
@@ -97,8 +113,8 @@ export default async function CompanyDetailPage({
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">مخاطبین</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">مخاطبین</h2>
             {company.contacts.length === 0 ? (
               <p className="text-sm text-muted">هنوز مخاطبی ثبت نشده است.</p>
             ) : (
@@ -127,8 +143,8 @@ export default async function CompanyDetailPage({
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">معاملات</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">معاملات</h2>
             {company.deals.length === 0 ? (
               <p className="text-sm text-muted">هنوز معامله‌ای ثبت نشده است.</p>
             ) : (
@@ -136,7 +152,7 @@ export default async function CompanyDetailPage({
                 {company.deals.map((d) => (
                   <li
                     key={d.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm"
+                    className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm hover:bg-[var(--gold-tint)]"
                   >
                     <span className="font-medium">{d.title}</span>
                     <span className="flex items-center gap-2">
@@ -154,8 +170,8 @@ export default async function CompanyDetailPage({
 
         <div className="space-y-4 lg:col-span-2">
           <LogActivity companyId={company.id} />
-          <div className="rounded-xl border border-border bg-surface p-5">
-            <h2 className="mb-3 font-semibold">تاریخچه فعالیت‌ها</h2>
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold tracking-tight">تاریخچه فعالیت‌ها</h2>
             <ActivityTimeline activities={company.activities} />
           </div>
         </div>

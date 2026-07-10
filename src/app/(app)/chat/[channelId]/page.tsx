@@ -62,7 +62,7 @@ export default async function ChannelPage({
     <div className="flex h-full flex-col">
       <AutoRefresh />
       {/* Header */}
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-4">
+      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border bg-surface px-4">
         <Link
           href="/chat"
           aria-label="بازگشت به کانال‌ها"
@@ -73,12 +73,17 @@ export default async function ChannelPage({
         {channel.isDirect ? (
           <Avatar name={title} color={other?.avatarColor ?? "#9a7b0a"} size={28} />
         ) : (
-          <Hash size={18} className="text-muted" aria-hidden="true" />
+          <span
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--gold-tint)] text-[color:var(--gold-ink)]"
+            aria-hidden="true"
+          >
+            <Hash size={16} />
+          </span>
         )}
-        <div>
-          <h2 className="text-sm font-semibold leading-tight">{title}</h2>
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-bold leading-tight tracking-tight text-text">{title}</h2>
           {!channel.isDirect && (
-            <p className="text-xs text-muted">
+            <p className="truncate text-xs text-muted">
               {formatNumber(channel.members.length)} عضو
               {channel.description ? ` · ${channel.description}` : ""}
             </p>

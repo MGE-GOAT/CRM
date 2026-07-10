@@ -55,7 +55,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div role="menu" className="absolute end-0 z-20 mt-2 w-56 animate-in rounded-xl border border-border bg-surface p-1 shadow-lg">
+        <div role="menu" className="absolute end-0 z-20 mt-2 w-56 animate-in rounded-xl border border-border bg-surface p-1 shadow-[var(--shadow-lg)]">
           <div className="px-3 py-2">
             <div className="text-sm font-medium">{name}</div>
             <div className="truncate text-xs text-muted">{email}</div>

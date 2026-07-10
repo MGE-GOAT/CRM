@@ -36,7 +36,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       action={(fd) => start(async () => setResult(await importContacts(fd)))}
       className="space-y-4"
     >
-      <div className="rounded-lg bg-surface-2 p-3 text-sm leading-relaxed text-muted">
+      <div className="rounded-e-lg border-s-2 border-[color:var(--gold-hair)] bg-surface-2 p-3 text-sm leading-relaxed text-muted">
         <p className="font-medium text-text">تهیهٔ فایل مخاطبین (فایل vCard/‏.vcf):</p>
         <p className="mt-1">
           <b>از خود آیفون:</b> برنامهٔ رایگان <span dir="ltr">«My Contacts Backup»</span> را نصب کنید ← <b>Backup</b>
@@ -54,7 +54,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
         accept=".vcf,.csv,.txt,text/vcard,text/x-vcard,text/directory,text/csv,text/plain,application/octet-stream"
         required
         disabled={pending || done}
-        className="block w-full rounded-lg border border-border p-2 text-sm file:me-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--brand)] file:px-4 file:py-2 file:text-white"
+        className="block w-full rounded-lg border border-border bg-surface p-2 text-sm text-muted file:me-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-[var(--gold-tint)] file:px-4 file:py-2 file:font-medium file:text-[color:var(--gold-ink)]"
       />
 
       <p className="text-xs text-muted">مخاطبین تکراری (شماره یا ایمیل موجود) به‌صورت خودکار نادیده گرفته می‌شوند.</p>

@@ -6,6 +6,33 @@ import { TaskItem } from "./task-item";
 import { createTask } from "@/lib/actions/tasks";
 import { formatNumber } from "@/lib/format";
 
+/** Editorial section head: ink baseline, quiet-confident title, count chip. */
+function SectionHead({
+  label,
+  count,
+  accent,
+}: {
+  label: string;
+  count: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 border-b-2 border-[color:var(--rule)] bg-surface-2 px-4 py-3">
+      <h2 className="text-sm font-bold tracking-tight text-text">{label}</h2>
+      {accent ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold-tint)] px-2 py-0.5 text-xs font-medium text-[color:var(--gold-ink)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--gold-mid)]" aria-hidden="true" />
+          {formatNumber(count)}
+        </span>
+      ) : (
+        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted">
+          {formatNumber(count)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default async function TasksPage() {
   const user = await requireUser();
 
@@ -74,13 +101,11 @@ export default async function TasksPage() {
       />
 
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="overflow-hidden rounded-xl border border-border bg-surface">
-          <div className="border-b border-border bg-surface-2 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
-            باز ({formatNumber(open.length)})
-          </div>
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
+          <SectionHead label="باز" count={open.length} accent />
           <div className="divide-y divide-border">
             {open.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted">
+              <p className="px-4 py-10 text-center text-sm text-muted">
                 وظیفه بازی وجود ندارد. 🎉
               </p>
             ) : (
@@ -90,10 +115,8 @@ export default async function TasksPage() {
         </div>
 
         {done.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <div className="border-b border-border bg-surface-2 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
-              انجام‌شده ({formatNumber(done.length)})
-            </div>
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
+            <SectionHead label="انجام‌شده" count={done.length} />
             <div className="divide-y divide-border">{done.map(render)}</div>
           </div>
         )}

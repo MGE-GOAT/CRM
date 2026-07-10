@@ -67,12 +67,16 @@ export function ActiveToggle({
           }
         })
       }
-      className={`rounded-full px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
         isActive
-          ? "bg-green-50 text-green-700 hover:bg-green-100"
-          : "bg-surface-3 text-muted hover:bg-surface-3"
+          ? "border-[color:var(--gold-hair)] bg-[var(--gold-tint)] text-[color:var(--gold-ink)] hover:bg-[var(--gold-tint-strong)]"
+          : "border-border bg-surface-2 text-muted hover:bg-surface-3"
       }`}
     >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[var(--gold-mid)]" : "bg-faint"}`}
+        aria-hidden="true"
+      />
       {isActive ? "فعال" : "غیرفعال"}
     </button>
   );

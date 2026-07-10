@@ -6,6 +6,7 @@ import { Send, Reply, X, CornerDownLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { sendMessage } from "@/lib/actions/chat";
 import { formatTime, formatDayLabel, dayKey } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export type ChatMsg = {
   id: string;
@@ -26,7 +27,7 @@ function SendButton() {
       disabled={pending}
       aria-label="ارسال پیام"
       aria-busy={pending}
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--brand)] text-white transition hover:bg-[var(--brand-600)] disabled:opacity-60"
+      className="btn-gold grid h-10 w-10 shrink-0 place-items-center rounded-lg"
     >
       <Send size={16} aria-hidden="true" />
     </button>
@@ -100,8 +101,8 @@ export function ChatThread({
                   )}
                   {/* quoted reply */}
                   {m.replyToBody && (
-                    <div className="mb-1 border-s-2 border-[var(--brand)]/50 bg-surface-2 ps-2 py-1 text-xs text-muted">
-                      <span className="font-medium text-[var(--brand-600)]">
+                    <div className="mb-1 rounded-lg border-s-2 border-[color:var(--gold-mid)] bg-surface-2 px-2 py-1 text-xs text-muted">
+                      <span className="font-medium text-[color:var(--gold-ink)]">
                         {m.replyToName}
                       </span>
                       <span className="mx-1">·</span>
@@ -109,7 +110,16 @@ export function ChatThread({
                     </div>
                   )}
                   <div className="flex min-w-0 items-start gap-2">
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-text">{m.body}</p>
+                    <div
+                      className={cn(
+                        "min-w-0 rounded-2xl border px-3 py-2 text-sm leading-relaxed text-text",
+                        mine
+                          ? "border-[color:var(--gold-hair)] bg-[var(--gold-tint)]"
+                          : "border-border bg-surface-2"
+                      )}
+                    >
+                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    </div>
                     <button
                       onClick={() => {
                         setReplyTo(m);
@@ -117,7 +127,7 @@ export function ChatThread({
                       }}
                       aria-label="پاسخ"
                       title="پاسخ"
-                      className="mt-0.5 shrink-0 rounded p-1 text-muted opacity-100 transition hover:bg-surface-3 hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                      className="mt-1 shrink-0 rounded p-1 text-muted opacity-100 transition hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                     >
                       <Reply size={14} aria-hidden="true" />
                     </button>
@@ -132,10 +142,10 @@ export function ChatThread({
 
       {/* Reply banner */}
       {replyTo && (
-        <div className="flex items-center gap-2 border-t border-border bg-brand-50 px-3 py-2 text-xs">
-          <CornerDownLeft size={14} className="text-[var(--brand-600)]" aria-hidden="true" />
+        <div className="flex items-center gap-2 border-t border-border bg-[var(--gold-tint)] px-3 py-2 text-xs">
+          <CornerDownLeft size={14} className="text-[color:var(--gold-ink)]" aria-hidden="true" />
           <span className="text-muted">
-            پاسخ به <span className="font-medium text-[var(--brand-600)]">{replyTo.senderName}</span>:{" "}
+            پاسخ به <span className="font-medium text-[color:var(--gold-ink)]">{replyTo.senderName}</span>:{" "}
             <span className="line-clamp-1 inline-block max-w-[45%] align-bottom sm:max-w-[60%]">{replyTo.body}</span>
           </span>
           <button

@@ -75,12 +75,18 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
                   onClick={() => setOpen(false)}
                   aria-current={isActive(item.href) ? "page" : undefined}
                   className={cn(
-                    "block rounded-lg px-3 py-2 text-sm font-medium",
+                    "relative block rounded-lg px-3 py-2 text-sm font-medium transition",
                     isActive(item.href)
                       ? "bg-sidebar-surface text-[var(--gold-from)]"
-                      : "text-sidebar-text/80 hover:bg-sidebar-surface/60"
+                      : "text-sidebar-text/80 hover:bg-sidebar-surface/60 hover:text-white"
                   )}
                 >
+                  {isActive(item.href) && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-1.5 start-0 w-[3px] rounded-e-full bg-gradient-to-b from-[var(--gold-from)] to-[var(--gold-to)]"
+                    />
+                  )}
                   {item.label}
                 </Link>
               ))}

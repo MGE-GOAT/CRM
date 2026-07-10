@@ -25,9 +25,9 @@ export default async function UsersPage() {
       />
 
       <div className="p-4 sm:p-6">
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
           <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-2 text-right text-xs tracking-wide text-muted">
+            <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">عضو</th>
                 <th className="hidden px-4 py-3 font-medium md:table-cell">تاریخ عضویت</th>
@@ -52,7 +52,9 @@ export default async function UsersPage() {
                               <span className="ms-2 text-xs text-muted">(شما)</span>
                             )}
                           </div>
-                          <div className="text-xs text-muted">{u.email}</div>
+                          <div className="text-xs text-muted" dir="ltr">
+                            {u.email}
+                          </div>
                         </div>
                       </div>
                     </td>

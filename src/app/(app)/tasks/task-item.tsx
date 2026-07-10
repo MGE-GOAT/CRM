@@ -33,14 +33,18 @@ export function TaskItem({
   const overdue = dueDate && !completed && new Date(dueDate) < new Date();
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--gold-tint)]">
+    <div
+      className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--gold-tint)] ${
+        completed ? "opacity-70" : ""
+      }`}
+    >
       <button
         onClick={() => start(() => toggleTask(id, !completed))}
         disabled={pending}
         className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
           completed
-            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-            : "border-border-strong hover:border-[var(--brand)]"
+            ? "border-[color:var(--gold-ink)] bg-[color:var(--gold-ink)] text-white"
+            : "border-border-strong hover:border-[color:var(--gold-ink)]"
         }`}
         aria-label={completed ? "علامت‌گذاری به‌عنوان انجام‌نشده" : "علامت‌گذاری به‌عنوان انجام‌شده"}
       >
@@ -50,7 +54,7 @@ export function TaskItem({
       <div className="min-w-0 flex-1">
         <p
           className={`text-sm font-medium ${
-            completed ? "text-muted line-through" : ""
+            completed ? "text-muted line-through" : "text-text"
           }`}
         >
           {title}
@@ -58,7 +62,9 @@ export function TaskItem({
         {description && (
           <p className="truncate text-xs text-muted">{description}</p>
         )}
-        {related && <p className="text-xs text-[var(--brand)]">{related}</p>}
+        {related && (
+          <p className="text-xs text-[color:var(--gold-ink)]">{related}</p>
+        )}
         {/* Due date shown here on mobile (the side column is hidden below sm). */}
         <p className={`text-xs sm:hidden ${overdue ? "font-medium text-red-600" : "text-muted"}`}>
           {dueDate ? formatDate(dueDate) : "بدون مهلت"}

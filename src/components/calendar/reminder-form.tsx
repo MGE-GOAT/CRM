@@ -57,7 +57,7 @@ export function ReminderForm({
       className="space-y-4"
     >
       {error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+        <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600">
           {error}
         </p>
       )}
