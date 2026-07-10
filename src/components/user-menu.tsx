@@ -44,7 +44,7 @@ export function UserMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`${name} — منوی کاربر`}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50"
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[var(--gold-tint)]"
       >
         <Avatar name={name} color={color} />
         <div className="hidden text-right sm:block">

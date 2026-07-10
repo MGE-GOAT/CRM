@@ -106,7 +106,7 @@ export default async function DealDetailPage({
             </div>
 
             {deal.notes && (
-              <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-muted">{deal.notes}</div>
+              <div className="mt-4 rounded-lg bg-surface-2 p-3 text-sm text-muted">{deal.notes}</div>
             )}
           </div>
         </div>

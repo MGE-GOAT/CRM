@@ -9,6 +9,7 @@ import { ConfirmDelete } from "@/components/confirm-delete";
 import { DuplicateButton } from "@/components/duplicate-button";
 import { ContactForm } from "./contact-form";
 import { ImportContacts } from "./import-contacts";
+import { SenfPill } from "@/components/ui/badge";
 import {
   createContact,
   updateContact,
@@ -98,9 +99,9 @@ export default async function ContactsPage({
       />
 
       <div className="p-4 sm:p-6">
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
           <table className="w-full text-sm">
-            <thead className="border-b border-border bg-gray-50 text-right text-xs tracking-wide text-muted">
+            <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">نام</th>
                 <th className="hidden px-4 py-3 font-medium md:table-cell">شرکت</th>
@@ -120,7 +121,7 @@ export default async function ContactsPage({
                 </tr>
               )}
               {contacts.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50/60">
+                <tr key={c.id} className="hover:bg-[var(--gold-tint)]">
                   <td className="px-4 py-3">
                     <Link
                       href={`/contacts/${c.id}`}
@@ -146,8 +147,8 @@ export default async function ContactsPage({
                   <td className="hidden px-4 py-3 text-muted md:table-cell">
                     {c.company?.name ?? "—"}
                   </td>
-                  <td className="hidden max-w-[12rem] truncate px-4 py-3 text-muted lg:table-cell" title={c.senf ?? undefined}>
-                    {c.senf ?? "—"}
+                  <td className="hidden max-w-[13rem] px-4 py-3 lg:table-cell" title={c.senf ?? undefined}>
+                    {c.senf ? <SenfPill senf={c.senf} /> : <span className="text-muted">—</span>}
                   </td>
                   <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">
                     {c.phone ? toFa(c.phone) : "—"}
@@ -197,7 +198,7 @@ export default async function ContactsPage({
               {page > 1 ? (
                 <Link
                   href={pageHref(page - 1)}
-                  className="rounded-lg border border-border px-3 py-1.5 hover:bg-gray-50"
+                  className="rounded-lg border border-border px-3 py-1.5 hover:bg-[var(--gold-tint)]"
                 >
                   قبلی
                 </Link>
@@ -207,7 +208,7 @@ export default async function ContactsPage({
               {page < totalPages ? (
                 <Link
                   href={pageHref(page + 1)}
-                  className="rounded-lg border border-border px-3 py-1.5 hover:bg-gray-50"
+                  className="rounded-lg border border-border px-3 py-1.5 hover:bg-[var(--gold-tint)]"
                 >
                   بعدی
                 </Link>

@@ -1,5 +1,23 @@
 import { cn } from "@/lib/utils";
 import { stageLabel, priorityLabel } from "@/lib/labels";
+import { senfColor } from "@/lib/senf-color";
+
+/** صنف (business category) pill — material tint + colored dot, neutral text. */
+export function SenfPill({ senf, className }: { senf: string; className?: string }) {
+  const c = senfColor(senf);
+  return (
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-text",
+        className
+      )}
+      style={{ background: c.tint, border: `1px solid ${c.dot}40` }}
+    >
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.dot }} aria-hidden="true" />
+      <span className="truncate">{senf}</span>
+    </span>
+  );
+}
 
 export function Badge({
   children,
@@ -26,7 +44,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600",
+        "inline-flex items-center gap-1 rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted",
         className
       )}
     >

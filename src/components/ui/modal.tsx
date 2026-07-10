@@ -95,7 +95,7 @@ export function Modal({
               </h3>
               <button
                 onClick={close}
-                className="rounded-lg p-1 text-muted hover:bg-gray-50"
+                className="rounded-lg p-1 text-muted hover:bg-[var(--gold-tint)]"
                 aria-label="بستن"
               >
                 <X size={18} aria-hidden="true" />

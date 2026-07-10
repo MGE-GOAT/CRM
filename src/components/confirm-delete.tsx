@@ -46,7 +46,7 @@ export function ConfirmDelete({
             setConfirming(false);
             setError(null);
           }}
-          className="rounded px-2 py-1 text-muted hover:bg-gray-50"
+          className="rounded px-2 py-1 text-muted hover:bg-[var(--gold-tint)]"
         >
           خیر
         </button>

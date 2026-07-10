@@ -43,7 +43,7 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
     <div className="md:hidden">
       <button
         onClick={() => setOpen(true)}
-        className="rounded-lg p-2 hover:bg-gray-50"
+        className="rounded-lg p-2 hover:bg-[var(--gold-tint)]"
         aria-label="باز کردن منو"
       >
         <Menu size={20} aria-hidden="true" />

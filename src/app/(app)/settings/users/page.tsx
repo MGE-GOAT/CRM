@@ -27,7 +27,7 @@ export default async function UsersPage() {
       <div className="p-4 sm:p-6">
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="w-full text-sm">
-            <thead className="border-b border-border bg-gray-50 text-right text-xs tracking-wide text-muted">
+            <thead className="border-b border-border bg-surface-2 text-right text-xs tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">عضو</th>
                 <th className="hidden px-4 py-3 font-medium md:table-cell">تاریخ عضویت</th>
@@ -41,7 +41,7 @@ export default async function UsersPage() {
               {users.map((u) => {
                 const isSelf = u.id === current.id;
                 return (
-                  <tr key={u.id} className="hover:bg-gray-50/60">
+                  <tr key={u.id} className="hover:bg-[var(--gold-tint)]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar name={u.name} color={u.avatarColor} size={34} />

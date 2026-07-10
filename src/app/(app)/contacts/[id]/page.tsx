@@ -125,7 +125,7 @@ export default async function ContactDetailPage({
             </div>
 
             {contact.notes && (
-              <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-muted">
+              <div className="mt-4 rounded-lg bg-surface-2 p-3 text-sm text-muted">
                 {contact.notes}
               </div>
             )}

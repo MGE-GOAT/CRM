@@ -75,7 +75,7 @@ export default async function TasksPage() {
 
       <div className="space-y-6 p-4 sm:p-6">
         <div className="overflow-hidden rounded-xl border border-border bg-surface">
-          <div className="border-b border-border bg-gray-50 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
+          <div className="border-b border-border bg-surface-2 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
             باز ({formatNumber(open.length)})
           </div>
           <div className="divide-y divide-border">
@@ -91,7 +91,7 @@ export default async function TasksPage() {
 
         {done.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <div className="border-b border-border bg-gray-50 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
+            <div className="border-b border-border bg-surface-2 px-4 py-2.5 text-xs font-medium tracking-wide text-muted">
               انجام‌شده ({formatNumber(done.length)})
             </div>
             <div className="divide-y divide-border">{done.map(render)}</div>

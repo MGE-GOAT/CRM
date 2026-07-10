@@ -87,7 +87,7 @@ export function ChannelSidebar({
               <button
                 key={u.id}
                 onClick={() => openDm(u.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-[var(--gold-tint)]"
               >
                 <Avatar name={u.name} color={u.avatarColor} size={22} />
                 {u.name}
@@ -114,7 +114,7 @@ function ChannelLink({
         "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm",
         active
           ? "bg-brand-50 text-[var(--brand-600)]"
-          : "text-gray-600 hover:bg-gray-50"
+          : "text-muted hover:bg-[var(--gold-tint)]"
       )}
     >
       <span className="flex min-w-0 items-center gap-2">
@@ -147,7 +147,7 @@ function NewChannelButton({
       trigger={(open) => (
         <button
           onClick={open}
-          className="rounded p-1 text-muted hover:bg-gray-50 hover:text-text"
+          className="rounded p-1 text-muted hover:bg-[var(--gold-tint)] hover:text-text"
           aria-label="کانال جدید"
           title="کانال جدید"
         >

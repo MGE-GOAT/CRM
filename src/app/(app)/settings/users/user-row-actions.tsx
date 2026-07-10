@@ -70,7 +70,7 @@ export function ActiveToggle({
       className={`rounded-full px-2.5 py-1 text-xs font-medium transition disabled:opacity-50 ${
         isActive
           ? "bg-green-50 text-green-700 hover:bg-green-100"
-          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+          : "bg-surface-3 text-muted hover:bg-surface-3"
       }`}
     >
       {isActive ? "فعال" : "غیرفعال"}
@@ -85,7 +85,7 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
       trigger={(open) => (
         <button
           onClick={open}
-          className="rounded-lg p-1.5 text-muted hover:bg-gray-50 hover:text-text"
+          className="rounded-lg p-1.5 text-muted hover:bg-[var(--gold-tint)] hover:text-text"
           title="بازنشانی گذرواژه"
         >
           <KeyRound size={16} />

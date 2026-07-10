@@ -118,13 +118,13 @@ export function CalendarView({
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button onClick={() => shiftMonth(-1)} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-gray-50">
+          <button onClick={() => shiftMonth(-1)} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             ماه قبل
           </button>
-          <button onClick={() => setView(new DateObject({ calendar: persian, locale: persian_fa }))} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-gray-50">
+          <button onClick={() => setView(new DateObject({ calendar: persian, locale: persian_fa }))} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             امروز
           </button>
-          <button onClick={() => shiftMonth(1)} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-gray-50">
+          <button onClick={() => shiftMonth(1)} className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             ماه بعد
           </button>
         </div>
@@ -142,21 +142,21 @@ export function CalendarView({
       {/* Grid */}
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
        <div className="min-w-[680px] md:min-w-0">
-        <div className="grid grid-cols-7 border-b border-border bg-gray-50 text-center text-xs font-medium text-muted">
+        <div className="grid grid-cols-7 border-b border-border bg-surface-2 text-center text-xs font-medium text-muted">
           {WEEKDAYS.map((w) => (
             <div key={w} className="px-1 py-2">{w}</div>
           ))}
         </div>
         <div className="grid grid-cols-7">
           {cells.map((day, i) => {
-            if (day === null) return <div key={`b${i}`} className="min-h-24 border-b border-s border-border bg-gray-50/40" />;
+            if (day === null) return <div key={`b${i}`} className="min-h-24 border-b border-s border-border bg-surface-2/40" />;
             const key = `${view.year}-${view.month.number}-${day}`;
             const dayReminders = byDay.get(key) ?? [];
             const isToday = key === todayKey;
             return (
               <div
                 key={key}
-                className="min-h-24 border-b border-s border-border p-1 transition hover:bg-gray-50/60"
+                className="min-h-24 border-b border-s border-border p-1 transition hover:bg-[var(--gold-tint)]"
               >
                 <div className="flex items-center justify-between px-1">
                   <span
@@ -169,7 +169,7 @@ export function CalendarView({
                   <button
                     onClick={() => setModal({ type: "add", date: gregorianForDay(day) })}
                     aria-label="افزودن برنامه"
-                    className="rounded p-0.5 text-muted opacity-100 transition hover:bg-gray-100 hover:text-text focus:opacity-100 sm:opacity-0 sm:[div:hover>div>&]:opacity-100"
+                    className="rounded p-0.5 text-muted opacity-100 transition hover:bg-surface-3 hover:text-text focus:opacity-100 sm:opacity-0 sm:[div:hover>div>&]:opacity-100"
                   >
                     <Plus size={13} aria-hidden="true" />
                   </button>
@@ -251,7 +251,7 @@ function Overlay({ title, onClose, children }: { title: string; onClose: () => v
       <div role="dialog" aria-modal="true" className="relative z-10 my-8 w-full max-w-md animate-in rounded-2xl bg-surface shadow-xl">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h3 className="font-semibold">{title}</h3>
-          <button onClick={onClose} aria-label="بستن" className="rounded-lg p-1 text-muted hover:bg-gray-50">
+          <button onClick={onClose} aria-label="بستن" className="rounded-lg p-1 text-muted hover:bg-[var(--gold-tint)]">
             <X size={18} aria-hidden="true" />
           </button>
         </div>
@@ -299,7 +299,7 @@ function DetailBody({
           {phone && <span className="ms-2 text-muted" dir="ltr">{toFa(phone)}</span>}
         </div>
       )}
-      {r.description && <p className="rounded-lg bg-gray-50 p-3 text-muted">{r.description}</p>}
+      {r.description && <p className="rounded-lg bg-surface-2 p-3 text-muted">{r.description}</p>}
       {r.messageBody && (
         <div className="rounded-lg border border-border p-3">
           <span className="text-xs text-muted">متن پیام:</span>
@@ -330,10 +330,10 @@ function DetailBody({
 
       {r.canEdit && (
         <div className="flex items-center gap-2 border-t border-border pt-3">
-          <button onClick={onToggle} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-gray-50">
+          <button onClick={onToggle} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             <Check size={15} /> {r.done ? "انجام‌نشده" : "انجام شد"}
           </button>
-          <button onClick={onEdit} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-gray-50">
+          <button onClick={onEdit} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             <Pencil size={15} /> ویرایش
           </button>
           <button onClick={onDelete} className="ms-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">

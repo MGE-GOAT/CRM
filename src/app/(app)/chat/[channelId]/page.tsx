@@ -66,7 +66,7 @@ export default async function ChannelPage({
         <Link
           href="/chat"
           aria-label="بازگشت به کانال‌ها"
-          className="-ms-1 rounded-lg p-1 text-muted hover:bg-gray-50 md:hidden"
+          className="-ms-1 rounded-lg p-1 text-muted hover:bg-[var(--gold-tint)] md:hidden"
         >
           <ChevronLeft size={20} aria-hidden="true" className="rotate-180" />
         </Link>

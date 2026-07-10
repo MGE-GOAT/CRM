@@ -107,7 +107,7 @@ export default async function CompanyDetailPage({
                   <li key={c.id}>
                     <Link
                       href={`/contacts/${c.id}`}
-                      className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-gray-50"
+                      className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-[var(--gold-tint)]"
                     >
                       <Avatar
                         name={`${c.firstName} ${c.lastName}`}

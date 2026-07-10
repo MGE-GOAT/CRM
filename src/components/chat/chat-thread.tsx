@@ -100,7 +100,7 @@ export function ChatThread({
                   )}
                   {/* quoted reply */}
                   {m.replyToBody && (
-                    <div className="mb-1 border-s-2 border-[var(--brand)]/50 bg-gray-50 ps-2 py-1 text-xs text-muted">
+                    <div className="mb-1 border-s-2 border-[var(--brand)]/50 bg-surface-2 ps-2 py-1 text-xs text-muted">
                       <span className="font-medium text-[var(--brand-600)]">
                         {m.replyToName}
                       </span>
@@ -117,7 +117,7 @@ export function ChatThread({
                       }}
                       aria-label="پاسخ"
                       title="پاسخ"
-                      className="mt-0.5 shrink-0 rounded p-1 text-muted opacity-100 transition hover:bg-gray-100 hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                      className="mt-0.5 shrink-0 rounded p-1 text-muted opacity-100 transition hover:bg-surface-3 hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                     >
                       <Reply size={14} aria-hidden="true" />
                     </button>
@@ -141,7 +141,7 @@ export function ChatThread({
           <button
             onClick={() => setReplyTo(null)}
             aria-label="لغو پاسخ"
-            className="ms-auto rounded p-0.5 text-muted hover:bg-white"
+            className="ms-auto rounded p-0.5 text-muted hover:bg-surface"
           >
             <X size={14} aria-hidden="true" />
           </button>

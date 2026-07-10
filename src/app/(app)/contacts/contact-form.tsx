@@ -43,7 +43,7 @@ export function ContactForm({
         ) : (
           <button
             onClick={open}
-            className="rounded-lg p-1.5 text-muted hover:bg-gray-50 hover:text-text"
+            className="rounded-lg p-1.5 text-muted hover:bg-[var(--gold-tint)] hover:text-text"
             title="ویرایش"
             aria-label="ویرایش"
           >

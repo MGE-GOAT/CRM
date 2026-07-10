@@ -120,7 +120,7 @@ export default async function ReportsPage() {
                     </span>
                   </div>
                   <div
-                    className="h-2.5 overflow-hidden rounded-full bg-gray-100"
+                    className="h-2.5 overflow-hidden rounded-full bg-surface-3"
                     role="progressbar"
                     aria-label={`${stageLabel[f.stage]}: ${f.count} معامله`}
                     aria-valuenow={f.count}
@@ -153,7 +153,7 @@ export default async function ReportsPage() {
                     </span>
                   </div>
                   <div
-                    className="h-2.5 overflow-hidden rounded-full bg-gray-100"
+                    className="h-2.5 overflow-hidden rounded-full bg-surface-3"
                     role="progressbar"
                     aria-label={`${c.source}: ${formatToman(c.wonValue)} موفق`}
                     aria-valuenow={Math.round(c.wonValue || c.total)}
@@ -174,7 +174,7 @@ export default async function ReportsPage() {
             <h2 className="font-semibold">عملکرد تیم فروش</h2>
           </div>
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="border-b border-border bg-gray-50 text-right text-xs text-muted">
+            <thead className="border-b border-border bg-surface-2 text-right text-xs text-muted">
               <tr>
                 <th className="px-5 py-3 font-medium">عضو</th>
                 <th className="px-4 py-3 font-medium">درآمد موفق</th>
@@ -185,7 +185,7 @@ export default async function ReportsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {team.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50/60">
+                <tr key={t.id} className="hover:bg-[var(--gold-tint)]">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={t.name} color={t.color} size={30} />
@@ -194,7 +194,7 @@ export default async function ReportsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium">{formatToman(t.wonValue)}</div>
-                    <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-gray-100">
+                    <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-surface-3">
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: `${(t.wonValue / teamMax) * 100}%` }} />
                     </div>
                   </td>

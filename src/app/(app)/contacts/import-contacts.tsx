@@ -14,7 +14,7 @@ export function ImportContacts() {
       trigger={(open) => (
         <button
           onClick={open}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm hover:bg-gray-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm hover:bg-[var(--gold-tint)]"
         >
           <Upload size={16} /> ورود مخاطبین
         </button>
@@ -36,7 +36,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       action={(fd) => start(async () => setResult(await importContacts(fd)))}
       className="space-y-4"
     >
-      <div className="rounded-lg bg-gray-50 p-3 text-sm leading-relaxed text-muted">
+      <div className="rounded-lg bg-surface-2 p-3 text-sm leading-relaxed text-muted">
         <p className="font-medium text-text">تهیهٔ فایل مخاطبین (فایل vCard/‏.vcf):</p>
         <p className="mt-1">
           <b>از خود آیفون:</b> برنامهٔ رایگان <span dir="ltr">«My Contacts Backup»</span> را نصب کنید ← <b>Backup</b>

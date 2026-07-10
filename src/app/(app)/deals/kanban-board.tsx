@@ -96,7 +96,7 @@ export function KanbanBoard({
             }}
             onDragLeave={() => setOverCol((c) => (c === col.key ? null : c))}
             onDrop={() => onDrop(col.key)}
-            className={`flex w-[82vw] max-w-xs shrink-0 flex-col rounded-xl border bg-gray-50/60 transition sm:w-72 ${
+            className={`flex w-[82vw] max-w-xs shrink-0 flex-col rounded-xl border bg-surface-2/60 transition sm:w-72 ${
               overCol === col.key
                 ? "border-[var(--brand)] bg-brand-50"
                 : "border-border"
@@ -109,7 +109,7 @@ export function KanbanBoard({
                   style={{ backgroundColor: col.color }}
                 />
                 <span className="text-sm font-semibold">{col.label}</span>
-                <span className="rounded-full bg-gray-200 px-1.5 text-xs text-gray-600">
+                <span className="rounded-full bg-surface-3 px-1.5 text-xs text-muted">
                   {formatNumber(colDeals.length)}
                 </span>
               </div>

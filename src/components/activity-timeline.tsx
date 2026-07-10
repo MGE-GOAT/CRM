@@ -33,7 +33,7 @@ export function ActivityTimeline({ activities }: { activities: Activity[] }) {
       {activities.map((a) => {
         const Icon = ICONS[a.type] ?? StickyNote;
         return (
-          <li key={a.id} className="flex gap-3 rounded-lg p-2 hover:bg-gray-50">
+          <li key={a.id} className="flex gap-3 rounded-lg p-2 hover:bg-[var(--gold-tint)]">
             <div className="relative flex flex-col items-center">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-[var(--brand)]">
                 <Icon size={15} />

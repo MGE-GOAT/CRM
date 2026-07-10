@@ -33,14 +33,14 @@ export function TaskItem({
   const overdue = dueDate && !completed && new Date(dueDate) < new Date();
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--gold-tint)]">
       <button
         onClick={() => start(() => toggleTask(id, !completed))}
         disabled={pending}
         className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
           completed
             ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-            : "border-gray-300 hover:border-[var(--brand)]"
+            : "border-border-strong hover:border-[var(--brand)]"
         }`}
         aria-label={completed ? "علامت‌گذاری به‌عنوان انجام‌نشده" : "علامت‌گذاری به‌عنوان انجام‌شده"}
       >

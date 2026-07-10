@@ -144,7 +144,7 @@ export function InvoiceBuilder({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">اقلام</span>
-            <button type="button" onClick={addItem} className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-sm hover:bg-gray-50">
+            <button type="button" onClick={addItem} className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
               <Plus size={14} /> افزودن ردیف
             </button>
           </div>
@@ -178,8 +178,8 @@ export function InvoiceBuilder({
       </div>
 
       {/* ---- Printable / preview invoice ---- */}
-      <div className="print-invoice mt-6 rounded-lg border border-border bg-white p-6 text-black">
-        <div className="flex items-start justify-between border-b-2 border-gray-700 pb-4">
+      <div className="print-invoice mt-6 rounded-lg border border-border bg-surface p-6 text-black">
+        <div className="flex items-start justify-between border-b-2 border-border pb-4">
           <h1 className="text-2xl font-extrabold">فاکتور فروش</h1>
           <div className="text-left text-sm">
             <div>شماره: <span dir="ltr">{toFa(invoiceNo || "—")}</span></div>
@@ -207,24 +207,24 @@ export function InvoiceBuilder({
         <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-sm">
           <thead>
-            <tr className="bg-gray-100 text-right">
-              <th className="border border-gray-300 p-2 font-semibold">ردیف</th>
-              <th className="border border-gray-300 p-2 font-semibold">شرح کالا / خدمات</th>
-              <th className="border border-gray-300 p-2 font-semibold">تعداد</th>
-              <th className="border border-gray-300 p-2 font-semibold">واحد</th>
-              <th className="border border-gray-300 p-2 font-semibold">قیمت واحد (تومان)</th>
-              <th className="border border-gray-300 p-2 font-semibold">مبلغ (تومان)</th>
+            <tr className="bg-surface-3 text-right">
+              <th className="border border-border-strong p-2 font-semibold">ردیف</th>
+              <th className="border border-border-strong p-2 font-semibold">شرح کالا / خدمات</th>
+              <th className="border border-border-strong p-2 font-semibold">تعداد</th>
+              <th className="border border-border-strong p-2 font-semibold">واحد</th>
+              <th className="border border-border-strong p-2 font-semibold">قیمت واحد (تومان)</th>
+              <th className="border border-border-strong p-2 font-semibold">مبلغ (تومان)</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it, i) => (
               <tr key={it.id}>
-                <td className="border border-gray-300 p-2 text-center">{toFa(i + 1)}</td>
-                <td className="border border-gray-300 p-2">{it.desc || "—"}</td>
-                <td className="border border-gray-300 p-2 text-center">{toFa(it.qty)}</td>
-                <td className="border border-gray-300 p-2 text-center">{it.unit}</td>
-                <td className="border border-gray-300 p-2 text-left tabular-nums">{formatNumber(it.price)}</td>
-                <td className="border border-gray-300 p-2 text-left tabular-nums">{formatNumber(it.qty * it.price)}</td>
+                <td className="border border-border-strong p-2 text-center">{toFa(i + 1)}</td>
+                <td className="border border-border-strong p-2">{it.desc || "—"}</td>
+                <td className="border border-border-strong p-2 text-center">{toFa(it.qty)}</td>
+                <td className="border border-border-strong p-2 text-center">{it.unit}</td>
+                <td className="border border-border-strong p-2 text-left tabular-nums">{formatNumber(it.price)}</td>
+                <td className="border border-border-strong p-2 text-left tabular-nums">{formatNumber(it.qty * it.price)}</td>
               </tr>
             ))}
           </tbody>
@@ -237,14 +237,14 @@ export function InvoiceBuilder({
               <tr><td className="py-1 pl-6 text-muted">جمع کل:</td><td className="py-1 text-left tabular-nums">{formatToman(subtotal)}</td></tr>
               {discount > 0 && <tr><td className="py-1 pl-6 text-muted">تخفیف:</td><td className="py-1 text-left tabular-nums">{formatToman(discount)}</td></tr>}
               {taxRate > 0 && <tr><td className="py-1 pl-6 text-muted">مالیات بر ارزش افزوده ({toFa(taxRate)}٪):</td><td className="py-1 text-left tabular-nums">{formatToman(taxAmount)}</td></tr>}
-              <tr className="border-t border-gray-300 font-bold"><td className="py-1.5 pl-6">مبلغ قابل پرداخت:</td><td className="py-1.5 text-left tabular-nums">{formatToman(total)}</td></tr>
+              <tr className="border-t border-border-strong font-bold"><td className="py-1.5 pl-6">مبلغ قابل پرداخت:</td><td className="py-1.5 text-left tabular-nums">{formatToman(total)}</td></tr>
             </tbody>
           </table>
         </div>
 
         <p className="mt-3 text-sm">مبلغ به حروف: {toPersianWords(total)} تومان</p>
 
-        <div className="mt-10 grid grid-cols-2 gap-4 text-center text-sm text-gray-600">
+        <div className="mt-10 grid grid-cols-2 gap-4 text-center text-sm text-muted">
           <div>مهر و امضای فروشنده</div>
           <div>مهر و امضای خریدار</div>
         </div>

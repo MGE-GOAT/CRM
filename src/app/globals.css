@@ -1,44 +1,106 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------------------
-   Spun Holding (اسپان هلدینگ) — gold luxury theme.
-   Brand identity: metallic gold on light surfaces, dark charcoal sidebar.
---------------------------------------------------------------------------- */
+/* ===========================================================================
+   Spun Holding (اسپان هلدینگ) — "Aurum" design system.
+   Brand-matched to spunholding.com: warm gold #e2b55d on warm paper-white,
+   warm ink, charcoal sidebar. Light by default (matches the brand site);
+   an optional warm "Vault" dark theme is available via [data-theme="dark"].
+   Every surface is token-driven so both themes and all components stay in sync.
+=========================================================================== */
 :root {
-  /* Spun brand golds (from spunholding.com): #d4af37 metallic, #d1a255 soft. */
-  /* Readable gold for text/links/active on light backgrounds (AA). */
-  --brand: #8a6a0c;
-  --brand-600: #6f5409;
-  --brand-50: #f7f0da;
+  /* --- Brand gold (spunholding.com: #e2b55d warm, #d1a255 soft, #d4af37) --- */
+  --gold: #e2b55d;
+  --gold-from: #f2d488;
+  --gold-mid: #e2b55d;
+  --gold-to: #c9992f;
+  /* Readable gold for text/active/links on LIGHT surfaces (AA). */
+  --gold-ink: #96690f;
+  /* Warm gold washes + hairline (replace the old cold gray-50 hover). */
+  --gold-tint: rgba(226, 181, 93, 0.12);
+  --gold-tint-strong: rgba(226, 181, 93, 0.2);
+  --gold-hair: rgba(226, 181, 93, 0.5);
 
-  /* Decorative metallic gold (logo + button gradient). */
-  --gold-from: #e7cf72;
-  --gold-mid: #d4af37;
-  --gold-to: #c0922a;
+  /* Back-compat aliases (older components referenced --brand). */
+  --brand: var(--gold-ink);
+  --brand-600: #7c5709;
+  --brand-50: #f7efdc;
 
-  /* Light grey surfaces matching the site (#f5f5f5 / #ecf0f3). */
-  --bg: #f3f4f3;
-  --surface: #ffffff;
-  --border: #e6e7e4;
-  --text: #16150f;
-  --muted: #595750; /* 5.3:1 on white — passes WCAG AA */
+  /* --- Warm neutrals (Aurum light) --- */
+  --bg: #f7f3ea; /* warm bone canvas */
+  --surface: #fffdf8; /* raised panels/cards */
+  --surface-2: #f2ede1; /* table heads, subtle fills, controls */
+  --surface-3: #eae3d3; /* hover / pressed */
+  --border: #e8e1d1;
+  --border-strong: #d8cfb9;
+  --rule: #26221a; /* editorial ink baseline (Swiss graft) */
 
-  /* Dark charcoal sidebar to make the gold pop. */
-  --sidebar-bg: #14130e;
-  --sidebar-surface: #201e15;
-  --sidebar-text: #dad6c9;
-  --sidebar-muted: #8a8576;
+  --text: #1d1a12; /* warm near-black */
+  --muted: #6c6555; /* 5.4:1 on surface — AA */
+  --faint: #9a917c;
+
+  /* --- Charcoal sidebar (warm, makes the gold read) --- */
+  --sidebar-bg: #15120b;
+  --sidebar-surface: #211c12;
+  --sidebar-text: #e9e2d1;
+  --sidebar-muted: #9a9078;
+
+  /* Brown-tinted elevation (Atelier graft) — warmer than black shadow. */
+  --shadow-sm: 0 1px 2px rgba(74, 54, 20, 0.06);
+  --shadow-md: 0 6px 22px -8px rgba(74, 54, 20, 0.16), 0 2px 6px rgba(74, 54, 20, 0.06);
+  --shadow-lg: 0 20px 48px -16px rgba(74, 54, 20, 0.24);
+}
+
+/* --- Optional "Vault" dark theme: warm ink + hairline gold (opt-in) --- */
+:root[data-theme="dark"] {
+  --gold-from: #f0d585;
+  --gold-mid: #e2b55d;
+  --gold-to: #c9992f;
+  --gold-ink: #e8c469; /* readable gold on dark */
+  --gold-tint: rgba(226, 181, 93, 0.1);
+  --gold-tint-strong: rgba(226, 181, 93, 0.18);
+  --gold-hair: rgba(226, 181, 93, 0.22);
+
+  --brand: var(--gold-ink);
+  --brand-600: #e8c469;
+  --brand-50: rgba(226, 181, 93, 0.14);
+
+  --bg: #0e0b07; /* warm near-black */
+  --surface: #17130c;
+  --surface-2: #1e1810;
+  --surface-3: #271f15;
+  --border: rgba(233, 217, 170, 0.1);
+  --border-strong: rgba(233, 217, 170, 0.17);
+  --rule: rgba(226, 181, 93, 0.28);
+
+  --text: #f3edde;
+  --muted: #a89e87;
+  --faint: #6f6655;
+
+  --sidebar-bg: #0a0805;
+  --sidebar-surface: #171208;
+  --sidebar-text: #ece5d3;
+  --sidebar-muted: #948a72;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 26px -10px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 22px 52px -18px rgba(0, 0, 0, 0.7);
 }
 
 @theme inline {
   --color-brand: var(--brand);
   --color-brand-600: var(--brand-600);
   --color-brand-50: var(--brand-50);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-text: var(--text);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-surface: var(--sidebar-surface);
   --color-sidebar-text: var(--sidebar-text);
@@ -56,47 +118,77 @@ body {
   color: var(--text);
   font-family: var(--font-vazir), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Align every figure (counts, phones, prices, pages) in columns (Swiss graft). */
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum", "lnum";
+}
+/* Names/initials read naturally — opt out of tabular figures. */
+.tnum-off {
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
 }
 
 /* Metallic gold wordmark */
 .logo-gold {
-  background: linear-gradient(
-    135deg,
-    var(--gold-from),
-    var(--gold-mid) 45%,
-    var(--gold-to)
-  );
+  background: linear-gradient(135deg, var(--gold-from), var(--gold-mid) 45%, var(--gold-to));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Primary gold button — metallic gradient with dark text for contrast. */
+/* Primary gold button — warm metallic gradient, dark ink text (AA). */
 .btn-gold {
   background: linear-gradient(135deg, var(--gold-from), var(--gold-mid) 55%, var(--gold-to));
-  color: #1a1503;
+  color: #241a05;
   font-weight: 600;
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow-sm);
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 .btn-gold:hover {
   filter: brightness(1.04);
-  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 3px 14px rgba(226, 181, 93, 0.4);
+  transform: translateY(-1px);
 }
 .btn-gold:disabled {
   opacity: 0.6;
+  transform: none;
 }
 
-/* Thin scrollbars */
+/* Floated content panel with a gold-foil top rule (Atelier graft). */
+.panel {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  inset-inline: 14px;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
+  opacity: 0.75;
+}
+
+/* A gold-tint hover/selection wash (replaces cold gray-50). */
+.gold-hover:hover {
+  background: var(--gold-tint);
+}
+
+/* Thin scrollbars (warm). */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cdc8b8 transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #cdc8b8;
+  background: var(--border-strong);
   border-radius: 9999px;
 }
 
@@ -114,14 +206,12 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Visible keyboard focus ring for all interactive elements (WCAG 2.4.7/2.4.11).
-   Gold mid-tone is visible on both light surfaces and the dark sidebar. */
+/* Visible keyboard focus ring (WCAG 2.4.7/2.4.11) — gold on both grounds. */
 :focus-visible {
   outline: 2px solid var(--gold-mid);
   outline-offset: 2px;
   border-radius: 4px;
 }
-
 
 /* ---- Print: show ONLY the invoice, hide the app chrome ---- */
 @media print {
@@ -137,13 +227,11 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    /* No inset/bottom → height grows with content instead of clipping to one page. */
     height: auto;
     margin: 0 !important;
     border: 0 !important;
     padding: 0 !important;
   }
-  /* Don't split a table row across a page break. */
   .print-invoice tr {
     break-inside: avoid;
   }
@@ -157,5 +245,10 @@ body {
 
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-in { animation: none; }
+  .animate-in {
+    animation: none;
+  }
+  .btn-gold:hover {
+    transform: none;
+  }
 }
