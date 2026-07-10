@@ -25,10 +25,10 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Run on everything except the auth API, Next internals, public brand assets,
-  // and static image files (so the logo and other public assets aren't
-  // redirected to the login page by the auth guard).
+  // Run on everything except the auth API, the cron endpoints (which enforce
+  // their own x-cron-secret and must NOT be redirected to /login), Next
+  // internals, public brand assets, and static image files.
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|brand|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico)).*)",
+    "/((?!api/auth|api/cron|_next/static|_next/image|brand|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico)).*)",
   ],
 };
