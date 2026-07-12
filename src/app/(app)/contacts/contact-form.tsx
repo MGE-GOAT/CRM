@@ -4,12 +4,17 @@ import { Plus, Pencil } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea, SubmitButton, ModalForm } from "@/components/ui/form";
 
-type CompanyOption = { id: string; name: string };
+export type CompanyOption = { id: string; name: string };
 
 export type ContactValues = {
   id?: string;
   firstName: string;
   lastName: string;
+  factorName: string | null;
+  economicCode: string | null;
+  nationalId: string | null;
+  registrationNumber: string | null;
+  postalCode: string | null;
   email: string | null;
   phone: string | null;
   title: string | null;
@@ -62,6 +67,31 @@ export function ContactForm({
               <Input name="lastName" required defaultValue={values?.lastName} />
             </Field>
           </div>
+          <Field label="نام روی فاکتور" hint="نامی که مشتری روی فاکتور می‌بیند. اگر خالی بماند نام و نام خانوادگی استفاده می‌شود.">
+            <Input
+              name="factorName"
+              defaultValue={values?.factorName ?? ""}
+              placeholder="مثلاً فرشته زرگران"
+            />
+          </Field>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="شناسه/شماره ملی">
+              <Input name="nationalId" dir="ltr" defaultValue={values?.nationalId ?? ""} />
+            </Field>
+            <Field label="شماره اقتصادی">
+              <Input name="economicCode" dir="ltr" defaultValue={values?.economicCode ?? ""} />
+            </Field>
+            <Field label="کد پستی">
+              <Input name="postalCode" dir="ltr" defaultValue={values?.postalCode ?? ""} />
+            </Field>
+            <Field label="شماره ثبت">
+              <Input
+                name="registrationNumber"
+                dir="ltr"
+                defaultValue={values?.registrationNumber ?? ""}
+              />
+            </Field>
+          </div>
           <Field label="ایمیل">
             <Input name="email" type="email" dir="ltr" defaultValue={values?.email ?? ""} />
           </Field>
@@ -86,8 +116,13 @@ export function ContactForm({
               ))}
             </Select>
           </Field>
-          <Field label="یادداشت">
-            <Textarea name="notes" rows={3} defaultValue={values?.notes ?? ""} />
+          <Field label="آدرس">
+            <Textarea
+              name="notes"
+              rows={3}
+              defaultValue={values?.notes ?? ""}
+              placeholder="آدرس مخاطب…"
+            />
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <SubmitButton>

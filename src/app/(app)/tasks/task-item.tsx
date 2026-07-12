@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { PriorityBadge } from "@/components/ui/badge";
 import { ConfirmDelete } from "@/components/confirm-delete";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 import { toggleTask, deleteTask } from "@/lib/actions/tasks";
 
 export function TaskItem({
@@ -17,7 +17,7 @@ export function TaskItem({
   dueDate,
   assigneeName,
   assigneeColor,
-  related,
+  canDelete,
 }: {
   id: string;
   title: string;
@@ -27,7 +27,7 @@ export function TaskItem({
   dueDate: Date | null;
   assigneeName: string;
   assigneeColor: string;
-  related: string | null;
+  canDelete: boolean;
 }) {
   const [pending, start] = useTransition();
   const overdue = dueDate && !completed && new Date(dueDate) < new Date();
@@ -38,6 +38,7 @@ export function TaskItem({
         completed ? "opacity-70" : ""
       }`}
     >
+      {/* completion toggle */}
       <button
         onClick={() => start(() => toggleTask(id, !completed))}
         disabled={pending}
@@ -51,39 +52,46 @@ export function TaskItem({
         {completed && <Check size={13} />}
       </button>
 
+      {/* 1) OWNER (assignee) */}
+      <div className="flex shrink-0 items-center gap-2" title={assigneeName}>
+        <Avatar name={assigneeName} color={assigneeColor} size={26} />
+        <span className="hidden max-w-[7rem] truncate text-xs font-medium text-muted sm:inline">
+          {assigneeName}
+        </span>
+      </div>
+
+      {/* 2) EXPLANATION (title + description) */}
       <div className="min-w-0 flex-1">
-        <p
-          className={`text-sm font-medium ${
-            completed ? "text-muted line-through" : "text-text"
-          }`}
-        >
+        <p className={`truncate text-sm font-medium ${completed ? "text-muted line-through" : "text-text"}`}>
           {title}
         </p>
-        {description && (
-          <p className="truncate text-xs text-muted">{description}</p>
-        )}
-        {related && (
-          <p className="text-xs text-[color:var(--gold-ink)]">{related}</p>
-        )}
-        {/* Due date shown here on mobile (the side column is hidden below sm). */}
+        {description && <p className="truncate text-xs text-muted">{description}</p>}
+        {/* deadline echoed under the title on mobile (the side column is hidden below sm) */}
         <p className={`text-xs sm:hidden ${overdue ? "font-medium text-red-600" : "text-muted"}`}>
-          {dueDate ? formatDate(dueDate) : "بدون مهلت"}
+          {dueDate ? `${formatDate(dueDate)} · ${formatTime(dueDate)}` : "بدون مهلت"}
         </p>
       </div>
 
-      <PriorityBadge priority={priority} />
-
+      {/* 3) DEADLINE / TIME */}
       <span
-        className={`hidden w-28 text-end text-xs sm:block ${
+        className={`hidden w-28 shrink-0 text-end text-xs leading-tight sm:block ${
           overdue ? "font-medium text-red-600" : "text-muted"
         }`}
       >
-        {dueDate ? formatDate(dueDate) : "بدون مهلت"}
+        {dueDate ? (
+          <>
+            {formatDate(dueDate)}
+            <span className="block text-[11px] text-faint">{formatTime(dueDate)}</span>
+          </>
+        ) : (
+          "بدون مهلت"
+        )}
       </span>
 
-      <Avatar name={assigneeName} color={assigneeColor} size={26} />
+      {/* 4) PRIORITY */}
+      <PriorityBadge priority={priority} />
 
-      <ConfirmDelete onDelete={deleteTask.bind(null, id)} iconOnly />
+      {canDelete && <ConfirmDelete onDelete={deleteTask.bind(null, id)} iconOnly />}
     </div>
   );
 }

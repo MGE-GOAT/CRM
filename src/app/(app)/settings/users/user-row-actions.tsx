@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, SubmitButton, Select, ModalForm } from "@/components/ui/form";
+import { PasswordInput } from "@/components/ui/password-input";
 import { updateUserRole, toggleUserActive, resetUserPassword } from "@/lib/actions/users";
 
 export function RoleSelect({
@@ -99,7 +100,7 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
       {(close) => (
         <ModalForm action={resetUserPassword.bind(null, userId)} onDone={close}>
           <Field label="گذرواژه جدید">
-            <Input name="password" type="password" dir="ltr" required minLength={8} placeholder="حداقل ۸ کاراکتر" />
+            <PasswordInput name="password" required minLength={8} placeholder="حداقل ۸ کاراکتر" />
           </Field>
           <div className="flex justify-end pt-2">
             <SubmitButton>ثبت گذرواژه</SubmitButton>

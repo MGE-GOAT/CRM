@@ -32,6 +32,15 @@ model User {
   // When the account was deactivated (set on deactivate, cleared on reactivate).
   // A daily job purges accounts deactivated longer than PURGE_DEACTIVATED_DAYS.
   deactivatedAt DateTime?
+
+  // --- Member login approval + work-hours session (owner/admin exempt) ---
+  // Set at each MEMBER login; a pending member waits for the owner to approve.
+  pendingSince  DateTime?
+  // The member's session is valid until this instant (owner sets it on approval,
+  // defaulting to 6pm Tehran). Past/null = must (re)request approval to enter.
+  approvedUntil DateTime?
+  approvedById  String?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -45,6 +54,56 @@ model User {
   messages         Message[]
   createdChannels  Channel[]        @relation("ChannelCreator")
   reminders        Reminder[]
+  notifications    Notification[]
+  createdFactors   Factor[]         @relation("FactorCreator")
+  confirmedFactors Factor[]         @relation("FactorConfirmer")
+  attendance       Attendance[]
+}
+
+// One row per member per day: first clock-in and latest clock-out (Tehran).
+// Drives the owner's attendance/activity report.
+model Attendance {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day      String // Tehran Gregorian YYYY-MM-DD bucket
+  clockIn  DateTime
+  clockOut DateTime? // latest logout / auto-logout of the day
+
+  @@unique([userId, day])
+  @@index([userId])
+  @@index([day])
+}
+
+// ---------------------------------------------------------------------------
+// On-page notifications (bell + toasts, poll-driven)
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  MESSAGE
+  TASK
+  REMINDER
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  href      String?
+  // Stable source key for dedupe (e.g. a Reminder id for REMINDER notifications).
+  sourceId  String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Dedupe key for materialized notifications (e.g. one REMINDER per reminder
+  // per user). NULL sourceId rows (MESSAGE/TASK) are unconstrained in Postgres
+  // (NULLs compare distinct), so they can repeat freely.
+  @@unique([userId, type, sourceId])
+  @@index([userId])
+  @@index([userId, read, createdAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -77,11 +136,16 @@ model Company {
 
 model Contact {
   id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  title     String?
+  firstName  String
+  lastName   String
+  factorName String? // نام رسمی مشتری روی فاکتور (نامی که خودِ مشتری می‌بیند)
+  economicCode       String? // شماره اقتصادی
+  nationalId         String? // شناسه/شماره ملی
+  registrationNumber String? // شماره ثبت
+  postalCode         String? // کد پستی
+  email      String?
+  phone      String?
+  title      String?
   senf      String?  // صنف (business/trade category, for filtering)
   status    String   @default("active")
   notes     String?
@@ -96,6 +160,7 @@ model Contact {
   activities Activity[]
   tasks      Task[]
   reminders  Reminder[]
+  factors    Factor[]
   tags       Tag[]      @relation("ContactTags")
 
   @@index([ownerId])
@@ -249,21 +314,54 @@ model ChannelMember {
   @@index([userId])
 }
 
+enum MessageKind {
+  NORMAL // ordinary chat message
+  TASK_ASSIGN // an assignment card with an acknowledge button
+  FACTOR_SHARE // a shared factor card with a link to the factor
+}
+
 model Message {
   id        String   @id @default(cuid())
   channelId String
   channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   senderId  String
   sender    User     @relation(fields: [senderId], references: [id])
-  body      String
+  body      String? // optional: a message may carry only attachment(s)
   createdAt DateTime @default(now())
+
+  // structured message kind + task-assignment acknowledgement
+  kind     MessageKind @default(NORMAL)
+  taskId   String? // set for TASK_ASSIGN cards (loose ref; task may be deleted)
+  factorId String? // set for FACTOR_SHARE cards (loose ref; links to the factor)
+  ackedAt  DateTime? // when the recipient acknowledged a TASK_ASSIGN card
+
+  // edit / soft-delete
+  editedAt  DateTime?
+  deletedAt DateTime? // soft delete — row kept so replies/threads don't break
 
   // reply / quote
   replyToId String?
   replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
   replies   Message[] @relation("MessageReplies")
 
+  attachments Attachment[]
+
   @@index([channelId, createdAt])
+}
+
+// File/image attachments on a message. Bytes live on a mounted volume
+// (see storage lib); this row holds the metadata + storage key.
+model Attachment {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String // original display name
+  mimeType  String
+  size      Int // bytes
+  storageKey String  @unique // on-disk filename (cuid + ext)
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
 }
 
 // ---------------------------------------------------------------------------
@@ -304,4 +402,146 @@ model Reminder {
 
   @@index([date])
   @@index([createdById])
+}
+
+// ---------------------------------------------------------------------------
+// Factors (فاکتور) — pre-factor → factor lifecycle with per-source sending
+// ---------------------------------------------------------------------------
+
+enum PaymentKind {
+  CASH // نقدی
+  CHEQUE // چکی
+  HALF_HALF // نصف نقدی نصف چکی
+}
+
+enum FactorState {
+  INITIAL // پیش‌فاکتور — awaiting owner's first confirmation (تأیید اولیه)
+  FOLLOWING_UP // پیگیری — owner confirmed; creator sends to buyer, then marks paid
+  PAID // پرداخت‌شده — becomes a فاکتور; owner-only visibility from here
+  SENDING // ارسالی — owner confirmed paid + selected source(s)
+  EXIT // خروج — final; archived under the buyer's name
+  CANCELED // لغو‌شده — buyer didn't pay after the initial confirmation; terminal
+}
+
+// Fixed allowed sending sources; owner enables a subset (see FactorSourceOption).
+enum SourceKind {
+  IMANZADEH // ایمان‌زاده
+  BAFTINEH // بافتینه
+  BAFT_IRAN // بافت ایران
+  BEH_BAFT // به‌بافت
+  ANAHITA // آناهیتا
+}
+
+model Factor {
+  id     String      @id @default(cuid())
+  number Int // شماره فاکتور — sequential per month (see monthKey)
+  monthKey String // Jalali year-month bucket, e.g. "1405-04" — numbering + reset
+  state  FactorState @default(INITIAL)
+  paymentKind PaymentKind @default(CASH)
+
+  // Buyer (مشخصات خریدار) — snapshot + optional live contact link
+  contactId    String?
+  contact      Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  buyerName    String
+  buyerPhone   String?
+  buyerAddress String?
+  buyerEconomicCode       String? // شماره اقتصادی
+  buyerNationalId         String? // شناسه/شماره ملی
+  buyerRegistrationNumber String? // شماره ثبت
+  buyerPostalCode         String? // کد پستی
+
+  // Seller (مشخصات فروشنده) — editable defaults, snapshotted per factor
+  sellerName      String  @default("اسپان هلدینگ")
+  sellerAddress   String  @default("تهران، ۵ خرداد")
+  sellerPhone     String  @default("۰۹۱۲۲۶۰۰۸۰۴")
+  sellerMobile    String  @default("۰۹۱۲۴۴۸۴۷۴۴")
+  sellerInstagram String  @default("@spunholding")
+  sellerWebsite   String  @default("www.spunholding.com")
+
+  // Totals (ریال)
+  discount Decimal @default(0) @db.Decimal(16, 0)
+  vat      Decimal @default(0) @db.Decimal(16, 0)
+  notes    String? @default("اعتبار پیش فاکتور درصورت واریز نقدی حداکثر ۴۸ ساعت می‌باشد")
+
+  creatorId   String
+  creator     User    @relation("FactorCreator", fields: [creatorId], references: [id])
+  confirmedById String?
+  confirmedBy   User?  @relation("FactorConfirmer", fields: [confirmedById], references: [id])
+
+  confirmedAt DateTime? // owner's first confirmation (→ FOLLOWING_UP)
+  paidAt      DateTime? // creator marked paid (→ PAID)
+  sentAt      DateTime? // owner confirmed paid + picked sources (→ SENDING)
+  archivedAt  DateTime? // fully checked-out (→ EXIT / archived)
+  canceledAt  DateTime? // buyer declined to pay (→ CANCELED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items   FactorItem[]
+  sources FactorSourceEntry[]
+
+  @@unique([monthKey, number])
+  @@index([state])
+  @@index([creatorId])
+  @@index([contactId])
+  @@index([monthKey])
+}
+
+model FactorItem {
+  id        String  @id @default(cuid())
+  factorId  String
+  factor    Factor  @relation(fields: [factorId], references: [id], onDelete: Cascade)
+  row       Int // ردیف
+  name      String // نام کالا/خدمات
+  quantity  Decimal @default(0) @db.Decimal(14, 2) // تعداد/مقدار
+  unitPrice Decimal @default(0) @db.Decimal(16, 0) // بهای واحد (ریال)
+  description String? // شرح کالا
+
+  @@index([factorId])
+}
+
+// One entry per owner-selected source at SENDING. Each is independently
+// checkable (→ archived) and printable. Archived when checked by owner/admin.
+model FactorSourceEntry {
+  id       String     @id @default(cuid())
+  factorId String
+  factor   Factor     @relation(fields: [factorId], references: [id], onDelete: Cascade)
+  source   SourceKind
+  checked  Boolean    @default(false) // true = آرشیو; false = در حال انجام
+  checkedAt   DateTime?
+  checkedById String?
+
+  @@unique([factorId, source])
+  @@index([factorId])
+  @@index([checked])
+}
+
+// Owner-managed list of enabled sending sources (subset of the fixed 5).
+model FactorSourceOption {
+  key     SourceKind @id
+  enabled Boolean    @default(false)
+}
+
+// Persisted end-of-month snapshot. The complete monthly data (per-user
+// work-hours + paid-factor counts, the attendance log, and every factor of the
+// month with full detail) is stored here as JSON *before* the live rows for
+// that month are purged — so nothing is ever lost and the owner can always
+// view/download a closed month.
+model MonthlyArchive {
+  id              String   @id @default(cuid())
+  month           String   @unique // Jalali "YYYY-MM"
+  payload         Json // full snapshot (see buildMonthArchive)
+  factorCount     Int      @default(0)
+  attendanceCount Int      @default(0)
+  createdById     String?
+  createdAt       DateTime @default(now())
+}
+
+// Single-row, owner-settable running counter for factor "codes". Lets the team
+// align the app's factor numbers with their real invoice sequence (~5000) and
+// change the starting point at any time; numbering is continuous (no monthly
+// reset) so codes never repeat.
+model FactorCounter {
+  id   String @id @default("singleton")
+  next Int    @default(1) // the number the NEXT factor will receive
 }

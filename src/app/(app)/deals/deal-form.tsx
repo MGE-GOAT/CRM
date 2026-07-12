@@ -64,7 +64,7 @@ export function DealForm({
             <Input name="title" required defaultValue={values?.title} />
           </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="مبلغ (تومان)">
+            <Field label="مبلغ (ریال)">
               <Input
                 name="value"
                 type="text"

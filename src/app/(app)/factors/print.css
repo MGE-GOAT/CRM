@@ -1,0 +1,38 @@
+/* Print-only invoice: hide the app chrome, show just the invoice sheet. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #factor-print,
+  #factor-print * {
+    visibility: visible !important;
+  }
+
+  #factor-print {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    margin: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Force gold tints, table fills, and the watermark to render in print. */
+  #factor-print,
+  #factor-print * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

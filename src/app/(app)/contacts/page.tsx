@@ -1,21 +1,14 @@
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireUser, canManageUsers } from "@/lib/rbac";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SelectFilter } from "@/components/select-filter";
-import { Avatar } from "@/components/ui/avatar";
-import { ConfirmDelete } from "@/components/confirm-delete";
-import { DuplicateButton } from "@/components/duplicate-button";
 import { ContactForm } from "./contact-form";
 import { ImportContacts } from "./import-contacts";
-import { SenfPill } from "@/components/ui/badge";
-import {
-  createContact,
-  updateContact,
-  deleteContact,
-  duplicateContact,
-} from "@/lib/actions/contacts";
+import { ContactsBulkList } from "./contacts-bulk-list";
+import { createContact } from "@/lib/actions/contacts";
 import { formatNumber, toFa } from "@/lib/format";
 
 const PAGE_SIZE = 50;
@@ -27,6 +20,9 @@ export default async function ContactsPage({
 }) {
   const { q, company, senf, page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
+  const user = await requireUser();
+  // Delete + bulk-select UI is for ADMIN/OWNER (members can't delete anything).
+  const owner = canManageUsers(user.role);
 
   const and: Prisma.ContactWhereInput[] = [];
   if (q) {
@@ -99,95 +95,29 @@ export default async function ContactsPage({
       />
 
       <div className="p-4 sm:p-6">
-        <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
-          <table className="w-full text-sm">
-            <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">نام</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">شرکت</th>
-                <th className="hidden px-4 py-3 font-medium lg:table-cell">صنف</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">تلفن</th>
-                <th className="hidden px-4 py-3 font-medium lg:table-cell">ایمیل</th>
-                <th className="hidden px-4 py-3 font-medium lg:table-cell">مسئول</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {contacts.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-muted">
-                    مخاطبی یافت نشد.
-                  </td>
-                </tr>
-              )}
-              {contacts.map((c) => (
-                <tr key={c.id} className="hover:bg-[var(--gold-tint)]">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/contacts/${c.id}`}
-                      className="flex min-w-0 items-center gap-3 font-medium hover:text-[var(--brand)]"
-                    >
-                      <Avatar
-                        name={`${c.firstName} ${c.lastName}`}
-                        color={c.owner.avatarColor}
-                        size={32}
-                      />
-                      <span className="min-w-0" title={`${c.firstName} ${c.lastName}`}>
-                        <span className="block max-w-[14rem] truncate sm:max-w-[24rem]">
-                          {c.firstName} {c.lastName}
-                        </span>
-                        {c.title && (
-                          <span className="block max-w-[14rem] truncate text-xs font-normal text-muted sm:max-w-[24rem]">
-                            {c.title}
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted md:table-cell">
-                    {c.company?.name ?? "—"}
-                  </td>
-                  <td className="hidden max-w-[13rem] px-4 py-3 lg:table-cell" title={c.senf ?? undefined}>
-                    {c.senf ? <SenfPill senf={c.senf} /> : <span className="text-muted">—</span>}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">
-                    {c.phone ? toFa(c.phone) : "—"}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted lg:table-cell" dir="ltr">
-                    {c.email ?? "—"}
-                  </td>
-                  <td className="hidden px-4 py-3 lg:table-cell">
-                    <span className="inline-flex items-center gap-2 text-muted">
-                      <Avatar name={c.owner.name} color={c.owner.avatarColor} size={22} />
-                      {c.owner.name}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <ContactForm
-                        mode="edit"
-                        action={updateContact.bind(null, c.id)}
-                        companies={companies}
-                        values={{
-                          firstName: c.firstName,
-                          lastName: c.lastName,
-                          email: c.email,
-                          phone: c.phone,
-                          title: c.title,
-                          senf: c.senf,
-                          companyId: c.companyId,
-                          notes: c.notes,
-                        }}
-                      />
-                      <DuplicateButton onDuplicate={duplicateContact.bind(null, c.id)} />
-                      <ConfirmDelete onDelete={deleteContact.bind(null, c.id)} iconOnly />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ContactsBulkList
+          isOwner={owner}
+          companies={companies}
+          contacts={contacts.map((c) => ({
+            id: c.id,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            factorName: c.factorName,
+            economicCode: c.economicCode,
+            nationalId: c.nationalId,
+            registrationNumber: c.registrationNumber,
+            postalCode: c.postalCode,
+            email: c.email,
+            phone: c.phone,
+            title: c.title,
+            senf: c.senf,
+            notes: c.notes,
+            companyId: c.companyId,
+            companyName: c.company?.name ?? null,
+            ownerName: c.owner.name,
+            ownerAvatarColor: c.owner.avatarColor,
+          }))}
+        />
 
         {totalPages > 1 && (
           <nav className="mt-4 flex items-center justify-between text-sm" aria-label="صفحه‌بندی">

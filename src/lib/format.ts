@@ -45,9 +45,9 @@ export function formatNumber(n: number): string {
   return new Intl.NumberFormat(FA_LOCALE).format(n);
 }
 
-/** Format an amount as Toman (۱۲٬۵۰۰٬۰۰۰ تومان). */
-export function formatToman(value: number): string {
-  return `${formatNumber(Math.round(value))} تومان`;
+/** Amount in ریال (the app-wide currency), Persian numerals (۱۲٬۵۰۰٬۰۰۰ ریال). */
+export function formatRial(value: number): string {
+  return `${formatNumber(Math.round(value))} ریال`;
 }
 
 /** Percentage with Persian numerals (۸۵٪). */

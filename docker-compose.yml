@@ -71,6 +71,11 @@ services:
       CRON_SECRET: ${CRON_SECRET:-}
       # Auto-delete accounts deactivated longer than this many days (0 disables).
       PURGE_DEACTIVATED_DAYS: ${PURGE_DEACTIVATED_DAYS:-30}
+      # Where chat attachment bytes are written (mounted volume below).
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      # Persist chat attachments across container rebuilds.
+      - crm_uploads:/app/uploads
     ports:
       # Bound to loopback only — the public reaches the app through Nginx/HTTPS,
       # never directly (Docker would otherwise bypass the host firewall).
@@ -93,7 +98,7 @@ services:
     command:
       - node
       - -e
-      - "const hit=(p)=>fetch('http://app:3000/api/cron/'+p,{method:'POST',headers:{'x-cron-secret':process.env.CRON_SECRET||''}}).catch(()=>{});setInterval(()=>hit('send-sms'),60000);hit('send-sms');setInterval(()=>hit('purge-users'),86400000);setTimeout(()=>hit('purge-users'),120000);"
+      - "const hit=(p)=>fetch('http://app:3000/api/cron/'+p,{method:'POST',headers:{'x-cron-secret':process.env.CRON_SECRET||''}}).catch(()=>{});setInterval(()=>hit('send-sms'),60000);hit('send-sms');setInterval(()=>hit('purge-users'),86400000);setTimeout(()=>hit('purge-users'),120000);setInterval(()=>hit('close-month'),86400000);setTimeout(()=>hit('close-month'),180000);"
 
   # Restarts any container marked unhealthy (e.g. a hung app) automatically.
   autoheal:
@@ -107,3 +112,4 @@ services:
 
 volumes:
   crm_db_data:
+  crm_uploads:

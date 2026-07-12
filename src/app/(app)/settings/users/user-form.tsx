@@ -3,6 +3,7 @@
 import { UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, SubmitButton, ModalForm } from "@/components/ui/form";
+import { PasswordInput } from "@/components/ui/password-input";
 import { createUser } from "@/lib/actions/users";
 
 export function UserForm() {
@@ -27,7 +28,7 @@ export function UserForm() {
             <Input name="email" type="email" dir="ltr" required placeholder="ali@company.com" />
           </Field>
           <Field label="گذرواژه موقت">
-            <Input name="password" type="text" dir="ltr" required minLength={8} placeholder="حداقل ۸ کاراکتر" />
+            <PasswordInput name="password" required minLength={8} placeholder="حداقل ۸ کاراکتر" />
           </Field>
           <Field label="نقش">
             <Select name="role" defaultValue="MEMBER">

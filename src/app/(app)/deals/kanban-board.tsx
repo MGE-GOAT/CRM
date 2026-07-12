@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { GripVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { ConfirmDelete } from "@/components/confirm-delete";
-import { formatToman, formatPercent, formatNumber } from "@/lib/format";
+import { formatRial, formatPercent, formatNumber } from "@/lib/format";
 import { stageLabel } from "@/lib/labels";
 import { DealForm, type DealValues } from "./deal-form";
 
@@ -43,6 +43,7 @@ export function KanbanBoard({
   moveDeal,
   updateDeal,
   deleteDeal,
+  canDelete,
 }: {
   initialDeals: DealCard[];
   companies: Option[];
@@ -50,6 +51,7 @@ export function KanbanBoard({
   moveDeal: (id: string, stage: string) => Promise<{ error?: string } | void>;
   updateDeal: (id: string, formData: FormData) => Promise<{ error?: string } | void>;
   deleteDeal: (id: string) => Promise<{ error?: string } | void>;
+  canDelete: boolean;
 }) {
   const [deals, setDeals] = useState(initialDeals);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export function KanbanBoard({
                 </span>
               </div>
               <span className="shrink-0 text-xs font-medium text-muted">
-                {formatToman(total)}
+                {formatRial(total)}
               </span>
             </div>
 
@@ -147,7 +149,7 @@ export function KanbanBoard({
                         contacts={contacts}
                         values={d.editValues}
                       />
-                      <ConfirmDelete onDelete={deleteDeal.bind(null, d.id)} iconOnly />
+                      {canDelete && <ConfirmDelete onDelete={deleteDeal.bind(null, d.id)} iconOnly />}
                     </div>
                   </div>
                   {(d.companyName || d.contactName) && (
@@ -157,7 +159,7 @@ export function KanbanBoard({
                   )}
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-sm font-semibold text-[color:var(--gold-ink)]">
-                      {formatToman(d.value)}
+                      {formatRial(d.value)}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted">{formatPercent(d.probability)}</span>

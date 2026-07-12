@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Field, Input, Select, Textarea, SubmitButton } from "@/components/ui/form";
+import { Field, Input, Textarea, SubmitButton } from "@/components/ui/form";
 import { DateField } from "@/components/ui/date-field";
+import { TimeField } from "@/components/ui/time-field";
 
 export type ContactOption = { id: string; name: string };
 
@@ -33,11 +34,8 @@ export function ReminderForm({
   values?: ReminderValues;
   defaultDate?: string;
 }) {
-  const [act, setAct] = useState(values?.action ?? "CALL");
   const [color, setColor] = useState(values?.color ?? "#d4af37");
   const [error, setError] = useState<string | null>(null);
-  const needsContact = act !== "GENERAL";
-  const needsMessage = act === "WHATSAPP" || act === "SMS";
 
   return (
     <form
@@ -64,48 +62,35 @@ export function ReminderForm({
 
       <input type="hidden" name="color" value={color} />
 
-      <Field label="نوع برنامه">
-        <Select name="action" value={act} onChange={(e) => setAct(e.target.value)}>
-          <option value="CALL">تماس با مخاطب</option>
-          <option value="WHATSAPP">پیام واتساپ به مخاطب</option>
-          {/* SMS auto-send is disabled until the Melipayamak line is configured. */}
-          <option value="GENERAL">یادآوری عمومی</option>
-        </Select>
-      </Field>
-
-      {needsContact && (
-        <Field label="مخاطب">
-          <Select name="contactId" defaultValue={values?.contactId ?? ""} required>
-            <option value="">— انتخاب مخاطب —</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
+      {/* When editing an existing reminder, preserve any outreach data the
+          simplified form no longer exposes (action/contact/message). New
+          reminders omit these, so the server defaults action to GENERAL. */}
+      {values && (
+        <>
+          <input type="hidden" name="action" value={values.action} />
+          {values.contactId && (
+            <input type="hidden" name="contactId" value={values.contactId} />
+          )}
+          {values.messageBody && (
+            <input type="hidden" name="messageBody" value={values.messageBody} />
+          )}
+        </>
       )}
+
+      <Field label="عنوان">
+        <Input name="title" required defaultValue={values?.title ?? ""} placeholder="مثلاً پیگیری سفارش" />
+      </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="تاریخ">
           <DateField name="date" defaultValue={values?.date ?? defaultDate} />
         </Field>
         <Field label="ساعت">
-          <Input name="time" type="time" dir="ltr" defaultValue={values?.time ?? "09:00"} />
+          <TimeField name="time" defaultValue={values?.time ?? "09:00"} />
         </Field>
       </div>
 
-      <Field label="عنوان (اختیاری)">
-        <Input name="title" defaultValue={values?.title ?? ""} placeholder="در صورت خالی بودن، خودکار ساخته می‌شود" />
-      </Field>
-
-      {needsMessage && (
-        <Field label="متن پیام">
-          <Textarea name="messageBody" rows={3} defaultValue={values?.messageBody ?? ""} placeholder="متنی که برای مخاطب ارسال می‌شود…" />
-        </Field>
-      )}
-
-      <Field label="توضیحات (اختیاری)">
+      <Field label="یادداشت (اختیاری)">
         <Textarea name="description" rows={2} defaultValue={values?.description ?? ""} />
       </Field>
 

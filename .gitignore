@@ -50,3 +50,6 @@ next-env.d.ts
 .import-contacts.json
 .senf-results.json
 .company-results.json
+
+# Chat attachment uploads (local dev)
+uploads/

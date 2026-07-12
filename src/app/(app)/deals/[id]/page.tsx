@@ -4,7 +4,7 @@ import { ArrowRight, Building2, User, Briefcase, CalendarDays } from "lucide-rea
 import { prisma } from "@/lib/prisma";
 import { StageBadge } from "@/components/ui/badge";
 import { InvoiceBuilder } from "@/components/invoice/invoice-builder";
-import { formatToman, formatDate, formatPercent } from "@/lib/format";
+import { formatRial, formatDate, formatPercent } from "@/lib/format";
 
 const SELLER_NAME = "اسپان هلدینگ";
 
@@ -73,7 +73,7 @@ export default async function DealDetailPage({
               <StageBadge stage={deal.stage} />
             </div>
             <div className="mt-4 text-2xl font-bold text-[color:var(--gold-ink)]">
-              {formatToman(Number(deal.value))}
+              {formatRial(Number(deal.value))}
             </div>
 
             <div className="mt-5 space-y-3 text-sm">

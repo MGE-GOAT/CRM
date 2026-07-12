@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { authenticate, refreshCaptcha } from "@/lib/actions/auth-actions";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -60,13 +61,11 @@ export function LoginForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           گذرواژه
         </label>
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           required
           autoComplete="current-password"
-          dir="ltr"
           className={inputClass}
           placeholder="••••••••"
         />

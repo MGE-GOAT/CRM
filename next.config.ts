@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Don't advertise the framework via the default X-Powered-By header.
   poweredByHeader: false,
+  // Chat attachments are uploaded through a Server Action; the default 1MB
+  // request cap is too small for files. Cap kept modest to limit abuse.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "15mb",
+    },
+  },
   async headers() {
     return [
       {

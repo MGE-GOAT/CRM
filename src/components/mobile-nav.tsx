@@ -11,7 +11,7 @@ const NAV = [
   { href: "/", label: "داشبورد" },
   { href: "/contacts", label: "مخاطبین" },
   { href: "/companies", label: "شرکت‌ها" },
-  { href: "/deals", label: "معاملات" },
+  { href: "/factors", label: "فاکتورها" },
   { href: "/reports", label: "گزارش‌ها" },
   { href: "/tasks", label: "وظایف" },
   { href: "/calendar", label: "تقویم" },
@@ -24,7 +24,11 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
   const pathname = usePathname();
   const base = NAV.filter((n) => n.href !== "/reports" || canManageUsers);
   const items = canManageUsers
-    ? [...base, { href: "/settings/users", label: "تیم و تنظیمات" }]
+    ? [
+        ...base,
+        { href: "/factors/sent", label: "ارسالی‌ها" },
+        { href: "/settings/users", label: "تیم و تنظیمات" },
+      ]
     : base;
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);

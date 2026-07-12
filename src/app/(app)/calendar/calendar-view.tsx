@@ -68,9 +68,11 @@ type ModalState =
 export function CalendarView({
   reminders,
   contacts,
+  canDelete,
 }: {
   reminders: CalReminder[];
   contacts: ContactOption[];
+  canDelete: boolean;
 }) {
   const [view, setView] = useState(() => new DateObject({ calendar: persian, locale: persian_fa }));
   const [modal, setModal] = useState<ModalState>({ type: "none" });
@@ -227,7 +229,7 @@ export function CalendarView({
             onEdit={() => setModal({ type: "edit", reminder: modal.reminder })}
             onClose={() => setModal({ type: "none" })}
             onToggle={() => start(() => { void toggleReminderDone(modal.reminder.id, !modal.reminder.done); })}
-            onDelete={() => start(async () => { await deleteReminder(modal.reminder.id); setModal({ type: "none" }); })}
+            onDelete={canDelete ? () => start(async () => { await deleteReminder(modal.reminder.id); setModal({ type: "none" }); }) : undefined}
           />
         </Overlay>
       )}
@@ -277,7 +279,7 @@ function DetailBody({
   onEdit: () => void;
   onClose: () => void;
   onToggle: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const phone = r.contactPhone ? toEn(r.contactPhone) : null;
   const waText = r.messageBody ? `?text=${encodeURIComponent(r.messageBody)}` : "";
@@ -342,9 +344,11 @@ function DetailBody({
           <button onClick={onEdit} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-[var(--gold-tint)]">
             <Pencil size={15} /> ویرایش
           </button>
-          <button onClick={onDelete} className="ms-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10">
-            <Trash2 size={15} /> حذف
-          </button>
+          {onDelete && (
+            <button onClick={onDelete} className="ms-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-500/10">
+              <Trash2 size={15} /> حذف
+            </button>
+          )}
         </div>
       )}
     </div>

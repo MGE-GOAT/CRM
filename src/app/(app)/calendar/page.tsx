@@ -46,7 +46,7 @@ export default async function CalendarPage() {
   return (
     <div>
       <PageHeader title="تقویم" subtitle="برنامه‌های تماس و پیام تیم و یادآوری‌های شخصی" />
-      <CalendarView reminders={calReminders} contacts={contactOptions} />
+      <CalendarView reminders={calReminders} contacts={contactOptions} canDelete={manage} />
     </div>
   );
 }

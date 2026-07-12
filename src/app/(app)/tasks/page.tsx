@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/rbac";
+import { requireUser, canManageUsers } from "@/lib/rbac";
 import { PageHeader } from "@/components/page-header";
 import { TaskForm } from "./task-form";
 import { TaskItem } from "./task-item";
@@ -36,13 +36,11 @@ function SectionHead({
 export default async function TasksPage() {
   const user = await requireUser();
 
-  const [tasks, users, deals, contacts] = await Promise.all([
+  const [tasks, users] = await Promise.all([
     prisma.task.findMany({
       orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
       include: {
         assignee: { select: { name: true, avatarColor: true } },
-        deal: { select: { title: true } },
-        contact: { select: { firstName: true, lastName: true } },
       },
     }),
     prisma.user.findMany({
@@ -50,21 +48,10 @@ export default async function TasksPage() {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
-    prisma.deal.findMany({ select: { id: true, title: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.contact.findMany({
-      select: { id: true, firstName: true, lastName: true },
-      orderBy: { lastName: "asc" },
-    }),
   ]);
 
   const open = tasks.filter((t) => !t.completed);
   const done = tasks.filter((t) => t.completed);
-
-  const dealOptions = deals.map((d) => ({ id: d.id, name: d.title }));
-  const contactOptions = contacts.map((c) => ({
-    id: c.id,
-    name: `${c.firstName} ${c.lastName}`,
-  }));
 
   const render = (t: (typeof tasks)[number]) => (
     <TaskItem
@@ -77,10 +64,7 @@ export default async function TasksPage() {
       dueDate={t.dueDate}
       assigneeName={t.assignee.name}
       assigneeColor={t.assignee.avatarColor}
-      related={
-        t.deal?.title ??
-        (t.contact ? `${t.contact.firstName} ${t.contact.lastName}` : null)
-      }
+      canDelete={canManageUsers(user.role)}
     />
   );
 
@@ -90,13 +74,7 @@ export default async function TasksPage() {
         title="وظایف"
         subtitle={`${formatNumber(open.length)} باز · ${formatNumber(done.length)} انجام‌شده`}
         action={
-          <TaskForm
-            action={createTask}
-            users={users}
-            deals={dealOptions}
-            contacts={contactOptions}
-            currentUserId={user.id}
-          />
+          <TaskForm action={createTask} users={users} currentUserId={user.id} />
         }
       />
 

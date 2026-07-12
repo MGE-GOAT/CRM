@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers } from "@/lib/rbac";
+import { requireUser, canManageUsers, systemOwnerId } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
 
 const schema = z.object({
@@ -44,7 +44,8 @@ export async function createCompany(formData: FormData): Promise<FormResult> {
         phone: d.phone || null,
         address: d.address || null,
         notes: d.notes || null,
-        ownerId: user.id,
+        // Everything belongs to the OWNER — members/admins own nothing.
+        ownerId: await systemOwnerId(user.id),
       },
     });
     revalidatePath("/companies");
@@ -56,10 +57,8 @@ export async function createCompany(formData: FormData): Promise<FormResult> {
 export async function updateCompany(id: string, formData: FormData): Promise<FormResult> {
   const user = await requireUser();
   try {
-    const rec = await prisma.company.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
-    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ ویرایش این شرکت را ندارید.");
-    }
+    // Shared pool under the owner — any team member may edit; delete is
+    // ADMIN/OWNER-only.
     const d = parse(formData);
     await prisma.company.update({
       where: { id },
@@ -84,14 +83,34 @@ export async function updateCompany(id: string, formData: FormData): Promise<For
 export async function deleteCompany(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
-    const rec = await prisma.company.findUniqueOrThrow({
-      where: { id },
-      select: { ownerId: true },
-    });
-    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ حذف این شرکت را ندارید.");
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
     }
     await prisma.company.delete({ where: { id } });
+    revalidatePath("/companies");
+  } catch (e) {
+    return formError(e);
+  }
+}
+
+const MAX_BULK = 500;
+
+export async function deleteCompanies(ids: string[]): Promise<FormResult> {
+  const user = await requireUser();
+  try {
+    // Bulk delete is OWNER-only — enforced here at the server boundary, not just
+    // hidden in the UI (a client could call this action directly). Related
+    // contacts/deals detach automatically (companyId is onDelete: SetNull).
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
+    }
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error("موردی برای حذف انتخاب نشده است.");
+    }
+    if (ids.length > MAX_BULK || !ids.every((id) => typeof id === "string" && id)) {
+      throw new Error("درخواست حذف نامعتبر است.");
+    }
+    await prisma.company.deleteMany({ where: { id: { in: ids } } });
     revalidatePath("/companies");
   } catch (e) {
     return formError(e);

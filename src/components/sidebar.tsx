@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
   Users,
   Building2,
-  TrendingUp,
   CheckSquare,
   MessageSquare,
   CalendarDays,
   BarChart3,
+  FileText,
+  Send,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,11 +18,10 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
-  { href: "/", label: "داشبورد", icon: LayoutDashboard },
+  { href: "/", label: "گزارش‌ها", icon: BarChart3 },
   { href: "/contacts", label: "مخاطبین", icon: Users },
   { href: "/companies", label: "شرکت‌ها", icon: Building2 },
-  { href: "/deals", label: "معاملات", icon: TrendingUp },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
+  { href: "/factors", label: "فاکتورها", icon: FileText },
   { href: "/tasks", label: "وظایف", icon: CheckSquare },
   { href: "/calendar", label: "تقویم", icon: CalendarDays },
   { href: "/chat", label: "گفتگوی تیمی", icon: MessageSquare },
@@ -74,11 +73,19 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
         <Logo width={140} />
       </div>
       <nav aria-label="منوی اصلی" className="flex-1 space-y-1 px-3 py-2">
-        {NAV.filter((n) => n.href !== "/reports" || canManageUsers).map(({ href, label, icon }) => (
+        {NAV.map(({ href, label, icon }) => (
           <NavRow key={href} href={href} label={label} Icon={icon} active={isActive(href)} />
         ))}
       </nav>
       <div className="space-y-1 border-t border-white/10 px-3 py-2">
+        {canManageUsers && (
+          <NavRow
+            href="/factors/sent"
+            label="ارسالی‌ها"
+            Icon={Send}
+            active={pathname.startsWith("/factors/sent")}
+          />
+        )}
         {canManageUsers && (
           <NavRow
             href="/settings/users"

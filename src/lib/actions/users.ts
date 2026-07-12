@@ -153,3 +153,74 @@ export async function resetUserPassword(id: string, formData: FormData): Promise
     return formError(e);
   }
 }
+
+/**
+ * approveMember — OWNER only. Approves a pending member's login for a session
+ * ending at `untilTime` (HH:MM Tehran) or, by default, 6pm Tehran today. The
+ * end time must be in the future (after 6pm the owner supplies a custom time).
+ * Records the member's clock-in and notifies them.
+ */
+export async function approveMember(
+  userId: string,
+  untilTime?: string
+): Promise<FormResult> {
+  const owner = await requireRole("OWNER");
+  try {
+    const { sixPmTehran, tehranDayKey, recordClockIn } = await import("@/lib/attendance");
+    const target = await prisma.user.findFirst({
+      where: { id: userId, isActive: true, role: "MEMBER" },
+      select: { id: true },
+    });
+    if (!target) throw new Error("کاربر معتبر نیست.");
+
+    let until: Date;
+    if (untilTime) {
+      // Owner typed a specific end time — an explicitly-past one is an error.
+      if (!/^\d{2}:\d{2}$/.test(untilTime)) throw new Error("ساعت نامعتبر است.");
+      until = new Date(`${tehranDayKey()}T${untilTime}:00+03:30`);
+      if (until.getTime() <= Date.now()) {
+        throw new Error("زمان پایان باید در آینده باشد.");
+      }
+    } else {
+      // Default: valid until 6pm Tehran during work hours. If 6pm has already
+      // passed (after-hours approval), grant a short 1-hour window instead of
+      // blocking the owner — they can still type a specific time for longer.
+      until = sixPmTehran();
+      if (until.getTime() <= Date.now()) {
+        until = new Date(Date.now() + 60 * 60 * 1000);
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { approvedUntil: until, pendingSince: null, approvedById: owner.id },
+    });
+    await recordClockIn(userId);
+    await prisma.notification.create({
+      data: {
+        userId,
+        type: "TASK",
+        title: "ورود تأیید شد",
+        body: "دسترسی شما فعال شد.",
+        href: "/",
+      },
+    });
+    revalidatePath("/settings/users");
+  } catch (e) {
+    return formError(e);
+  }
+}
+
+/** dismissJoinRequest — OWNER only. Clears a pending request without approving. */
+export async function dismissJoinRequest(userId: string): Promise<FormResult> {
+  await requireRole("OWNER");
+  try {
+    await prisma.user.updateMany({
+      where: { id: userId, role: "MEMBER" },
+      data: { pendingSince: null },
+    });
+    revalidatePath("/settings/users");
+  } catch (e) {
+    return formError(e);
+  }
+}

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers } from "@/lib/rbac";
+import { requireUser, canManageUsers, systemOwnerId } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { parseContacts } from "@/lib/vcard";
@@ -11,6 +11,11 @@ import { parseContacts } from "@/lib/vcard";
 const schema = z.object({
   firstName: z.string().min(1, "نام الزامی است"),
   lastName: z.string().min(1, "نام خانوادگی الزامی است"),
+  factorName: z.string().max(300).optional(),
+  economicCode: z.string().max(50).optional(),
+  nationalId: z.string().max(50).optional(),
+  registrationNumber: z.string().max(50).optional(),
+  postalCode: z.string().max(50).optional(),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   title: z.string().max(300).optional(),
@@ -23,6 +28,11 @@ function parse(formData: FormData) {
   return schema.parse({
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
+    factorName: formData.get("factorName") || undefined,
+    economicCode: formData.get("economicCode") || undefined,
+    nationalId: formData.get("nationalId") || undefined,
+    registrationNumber: formData.get("registrationNumber") || undefined,
+    postalCode: formData.get("postalCode") || undefined,
     email: formData.get("email") || "",
     phone: formData.get("phone") || undefined,
     title: formData.get("title") || undefined,
@@ -40,13 +50,19 @@ export async function createContact(formData: FormData): Promise<FormResult> {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        factorName: data.factorName || null,
+        economicCode: data.economicCode || null,
+        nationalId: data.nationalId || null,
+        registrationNumber: data.registrationNumber || null,
+        postalCode: data.postalCode || null,
         email: data.email || null,
         phone: data.phone || null,
         title: data.title || null,
         senf: data.senf || null,
         companyId: data.companyId || null,
         notes: data.notes || null,
-        ownerId: user.id,
+        // Everything belongs to the OWNER — members/admins own nothing.
+        ownerId: await systemOwnerId(user.id),
       },
     });
     revalidatePath("/contacts");
@@ -58,16 +74,19 @@ export async function createContact(formData: FormData): Promise<FormResult> {
 export async function updateContact(id: string, formData: FormData): Promise<FormResult> {
   const user = await requireUser();
   try {
-    const rec = await prisma.contact.findUniqueOrThrow({ where: { id }, select: { ownerId: true } });
-    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ ویرایش این مخاطب را ندارید.");
-    }
+    // Shared pool under the owner — any team member may edit; only ADMIN/OWNER
+    // may delete. (Ownership no longer gates edits since the owner owns all.)
     const data = parse(formData);
     await prisma.contact.update({
       where: { id },
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        factorName: data.factorName || null,
+        economicCode: data.economicCode || null,
+        nationalId: data.nationalId || null,
+        registrationNumber: data.registrationNumber || null,
+        postalCode: data.postalCode || null,
         email: data.email || null,
         phone: data.phone || null,
         title: data.title || null,
@@ -86,14 +105,33 @@ export async function updateContact(id: string, formData: FormData): Promise<For
 export async function deleteContact(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
-    const rec = await prisma.contact.findUniqueOrThrow({
-      where: { id },
-      select: { ownerId: true },
-    });
-    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ حذف این مخاطب را ندارید.");
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
     }
     await prisma.contact.delete({ where: { id } });
+    revalidatePath("/contacts");
+  } catch (e) {
+    return formError(e);
+  }
+}
+
+const MAX_BULK = 500;
+
+export async function deleteContacts(ids: string[]): Promise<FormResult> {
+  const user = await requireUser();
+  try {
+    // Delete is ADMIN/OWNER-only — enforced here at the server boundary, not
+    // just hidden in the UI (a client could call this action directly).
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
+    }
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error("موردی برای حذف انتخاب نشده است.");
+    }
+    if (ids.length > MAX_BULK || !ids.every((id) => typeof id === "string" && id)) {
+      throw new Error("درخواست حذف نامعتبر است.");
+    }
+    await prisma.contact.deleteMany({ where: { id: { in: ids } } });
     revalidatePath("/contacts");
   } catch (e) {
     return formError(e);
@@ -104,11 +142,6 @@ export async function duplicateContact(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
     const src = await prisma.contact.findUniqueOrThrow({ where: { id } });
-    // Same ownership gate as update/delete — a member can't clone a contact they
-    // don't own into a record they'd fully control.
-    if (src.ownerId !== user.id && !canManageUsers(user.role)) {
-      return { error: "اجازهٔ کپی این مخاطب را ندارید." };
-    }
     await prisma.contact.create({
       data: {
         firstName: src.firstName,
@@ -119,7 +152,7 @@ export async function duplicateContact(id: string): Promise<FormResult> {
         senf: src.senf,
         notes: src.notes,
         companyId: src.companyId,
-        ownerId: user.id,
+        ownerId: await systemOwnerId(user.id),
       },
     });
     revalidatePath("/contacts");
@@ -183,6 +216,9 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
       return true;
     });
 
+    // Everything imported belongs to the OWNER (members/admins own nothing).
+    const ownerId = await systemOwnerId(user.id);
+
     // Create/link companies named in the file (e.g. business names the file
     // carries in an Organization/Company column). Reuse an existing company of
     // the same name; otherwise create it once. Bounded and deduped.
@@ -199,7 +235,7 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
       const missing = wanted.filter((n) => !companyId.has(n));
       for (let i = 0; i < missing.length; i += 200) {
         await prisma.company.createMany({
-          data: missing.slice(i, i + 200).map((name) => ({ name, ownerId: user.id })),
+          data: missing.slice(i, i + 200).map((name) => ({ name, ownerId })),
         });
       }
       if (missing.length) {
@@ -224,7 +260,7 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
         senf: c.senf ? c.senf.slice(0, 120) : null,
         notes: c.notes ? c.notes.slice(0, 10000) : null,
         companyId: (c.company && companyId.get(c.company.trim())) || null,
-        ownerId: user.id,
+        ownerId,
       }));
       const res = await prisma.contact.createMany({ data });
       imported += res.count;

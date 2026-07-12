@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers } from "@/lib/rbac";
+import { requireUser, canManageUsers, systemOwnerId } from "@/lib/rbac";
 import { parseAmount, toEn } from "@/lib/format";
 import { DealStage, DealStatus } from "@prisma/client";
 import { formError, type FormResult } from "@/lib/form-result";
@@ -56,7 +56,8 @@ export async function createDeal(formData: FormData): Promise<FormResult> {
         closedAt: status === "OPEN" ? null : new Date(),
         notes: d.notes || null,
         source: d.source || null,
-        ownerId: user.id,
+        // Everything belongs to the OWNER — members/admins own nothing.
+        ownerId: await systemOwnerId(user.id),
       },
     });
     revalidatePath("/deals");
@@ -70,11 +71,8 @@ export async function updateDeal(id: string, formData: FormData): Promise<FormRe
   try {
     const prev = await prisma.deal.findUniqueOrThrow({
       where: { id },
-      select: { ownerId: true, status: true, closedAt: true },
+      select: { status: true, closedAt: true },
     });
-    if (prev.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ ویرایش این معامله را ندارید.");
-    }
     const d = schema.parse({
       title: formData.get("title"),
       value: parseAmount(String(formData.get("value") ?? "0")),
@@ -122,12 +120,9 @@ export async function moveDealStage(id: string, stage: string): Promise<{ error?
   try {
     const prev = await prisma.deal.findUnique({
       where: { id },
-      select: { ownerId: true, status: true, closedAt: true },
+      select: { status: true, closedAt: true },
     });
     if (!prev) return { error: "معامله یافت نشد." };
-    if (prev.ownerId !== user.id && !canManageUsers(user.role)) {
-      return { error: "اجازهٔ جابجایی این معامله را ندارید." };
-    }
     const status = statusForStage(stage);
     const closedAt =
       status === "OPEN" ? null : prev.status === "OPEN" ? new Date() : prev.closedAt ?? new Date();
@@ -166,12 +161,8 @@ export async function moveDealStage(id: string, stage: string): Promise<{ error?
 export async function deleteDeal(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
-    const rec = await prisma.deal.findUniqueOrThrow({
-      where: { id },
-      select: { ownerId: true },
-    });
-    if (rec.ownerId !== user.id && !canManageUsers(user.role)) {
-      throw new Error("اجازهٔ حذف این معامله را ندارید.");
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
     }
     await prisma.deal.delete({ where: { id } });
     revalidatePath("/deals");

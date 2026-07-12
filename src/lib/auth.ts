@@ -95,6 +95,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           /* ignore — login already validated */
         }
 
+        // Members need the owner's approval on each login (owner/admin are
+        // exempt and enter immediately). Mark pending + reset any prior window,
+        // then notify every owner so they can approve.
+        if (user.role === "MEMBER") {
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { pendingSince: new Date(), approvedUntil: null },
+            });
+            const owners = await prisma.user.findMany({
+              where: { role: "OWNER", isActive: true },
+              select: { id: true },
+            });
+            if (owners.length) {
+              await prisma.notification.createMany({
+                data: owners.map((o) => ({
+                  userId: o.id,
+                  type: "TASK" as const,
+                  title: "درخواست ورود",
+                  body: `${user.name} می‌خواهد وارد شود`,
+                  href: "/settings/users",
+                })),
+              });
+            }
+          } catch {
+            /* non-fatal — the requireUser gate still enforces approval */
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,

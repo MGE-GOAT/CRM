@@ -2,12 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { PageHeader } from "@/components/page-header";
 import { Avatar } from "@/components/ui/avatar";
-import { formatDate, formatNumber } from "@/lib/format";
+import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { isOwner } from "@/lib/rbac";
 import { UserForm } from "./user-form";
 import { RoleSelect, ActiveToggle, ResetPasswordButton } from "./user-row-actions";
+import { JoinRequests, type JoinRequest } from "./join-requests";
+import { roleLabel } from "@/lib/labels";
 
 export default async function UsersPage() {
   const current = await requireRole("OWNER", "ADMIN");
+  const owner = isOwner(current.role);
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "asc" },
@@ -15,6 +19,22 @@ export default async function UsersPage() {
       _count: { select: { deals: true, contacts: true, assignedTasks: true } },
     },
   });
+
+  // Members waiting for the owner to approve their login.
+  const pending = owner
+    ? await prisma.user.findMany({
+        where: { role: "MEMBER", isActive: true, pendingSince: { not: null } },
+        select: { id: true, name: true, email: true, role: true, pendingSince: true },
+        orderBy: { pendingSince: "asc" },
+      })
+    : [];
+  const joinRequests: JoinRequest[] = pending.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: roleLabel[u.role] ?? u.role,
+    requestedAt: u.pendingSince ? formatDateTime(u.pendingSince) : "—",
+  }));
 
   return (
     <div>
@@ -25,6 +45,7 @@ export default async function UsersPage() {
       />
 
       <div className="p-4 sm:p-6">
+        {owner && <JoinRequests requests={joinRequests} />}
         <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
           <table className="w-full text-sm">
             <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">

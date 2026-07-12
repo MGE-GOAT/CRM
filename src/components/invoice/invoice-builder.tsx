@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Printer } from "lucide-react";
-import { formatToman, formatNumber, toFa } from "@/lib/format";
+import { formatRial, formatNumber, toFa } from "@/lib/format";
 import { toPersianWords } from "@/lib/num-to-words";
 
 type Party = { name: string; phone?: string | null; address?: string | null };
@@ -157,7 +157,7 @@ export function InvoiceBuilder({
               <input placeholder="شرح کالا / خدمات" value={it.desc} onChange={(e) => patch(it.id, "desc", e.target.value)} className={`col-span-2 sm:col-span-5 ${inputBase}`} />
               <input aria-label="تعداد" type="number" min={0} dir="ltr" value={it.qty} onChange={(e) => patch(it.id, "qty", Number(e.target.value) || 0)} className={`col-span-1 sm:col-span-1 ${inputBase}`} />
               <input aria-label="واحد" value={it.unit} onChange={(e) => patch(it.id, "unit", e.target.value)} className={`col-span-1 sm:col-span-2 ${inputBase}`} />
-              <input aria-label="قیمت واحد (تومان)" type="number" min={0} dir="ltr" value={it.price} onChange={(e) => patch(it.id, "price", Number(e.target.value) || 0)} className={`col-span-2 sm:col-span-3 ${inputBase}`} />
+              <input aria-label="قیمت واحد (ریال)" type="number" min={0} dir="ltr" value={it.price} onChange={(e) => patch(it.id, "price", Number(e.target.value) || 0)} className={`col-span-2 sm:col-span-3 ${inputBase}`} />
               <button type="button" onClick={() => removeItem(it.id)} disabled={items.length <= 1} aria-label={`حذف ردیف ${idx + 1}`} className="col-span-2 flex items-center justify-center rounded-lg border border-border p-2 text-muted hover:bg-red-50 hover:text-red-600 disabled:opacity-40 sm:col-span-1">
                 <Trash2 size={15} />
               </button>
@@ -167,7 +167,7 @@ export function InvoiceBuilder({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            تخفیف (تومان)
+            تخفیف (ریال)
             <input type="number" min={0} dir="ltr" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} className={`mt-1 ${inputBase}`} />
           </label>
           <label className="text-sm">
@@ -216,8 +216,8 @@ export function InvoiceBuilder({
               <th className="border border-border-strong p-2 font-semibold">شرح کالا / خدمات</th>
               <th className="border border-border-strong p-2 font-semibold">تعداد</th>
               <th className="border border-border-strong p-2 font-semibold">واحد</th>
-              <th className="border border-border-strong p-2 font-semibold">قیمت واحد (تومان)</th>
-              <th className="border border-border-strong p-2 font-semibold">مبلغ (تومان)</th>
+              <th className="border border-border-strong p-2 font-semibold">قیمت واحد (ریال)</th>
+              <th className="border border-border-strong p-2 font-semibold">مبلغ (ریال)</th>
             </tr>
           </thead>
           <tbody>
@@ -238,15 +238,15 @@ export function InvoiceBuilder({
         <div className="mt-4 flex justify-end">
           <table className="text-sm">
             <tbody>
-              <tr><td className="py-1 pl-6 text-muted">جمع کل:</td><td className="py-1 text-left tabular-nums">{formatToman(subtotal)}</td></tr>
-              {discount > 0 && <tr><td className="py-1 pl-6 text-muted">تخفیف:</td><td className="py-1 text-left tabular-nums">{formatToman(discount)}</td></tr>}
-              {taxRate > 0 && <tr><td className="py-1 pl-6 text-muted">مالیات بر ارزش افزوده ({toFa(taxRate)}٪):</td><td className="py-1 text-left tabular-nums">{formatToman(taxAmount)}</td></tr>}
-              <tr className="border-t border-border-strong font-bold"><td className="py-1.5 pl-6">مبلغ قابل پرداخت:</td><td className="py-1.5 text-left tabular-nums">{formatToman(total)}</td></tr>
+              <tr><td className="py-1 pl-6 text-muted">جمع کل:</td><td className="py-1 text-left tabular-nums">{formatRial(subtotal)}</td></tr>
+              {discount > 0 && <tr><td className="py-1 pl-6 text-muted">تخفیف:</td><td className="py-1 text-left tabular-nums">{formatRial(discount)}</td></tr>}
+              {taxRate > 0 && <tr><td className="py-1 pl-6 text-muted">مالیات بر ارزش افزوده ({toFa(taxRate)}٪):</td><td className="py-1 text-left tabular-nums">{formatRial(taxAmount)}</td></tr>}
+              <tr className="border-t border-border-strong font-bold"><td className="py-1.5 pl-6">مبلغ قابل پرداخت:</td><td className="py-1.5 text-left tabular-nums">{formatRial(total)}</td></tr>
             </tbody>
           </table>
         </div>
 
-        <p className="mt-3 text-sm">مبلغ به حروف: {toPersianWords(total)} تومان</p>
+        <p className="mt-3 text-sm">مبلغ به حروف: {toPersianWords(total)} ریال</p>
 
         <div className="mt-10 grid grid-cols-2 gap-4 text-center text-sm text-muted">
           <div>مهر و امضای فروشنده</div>

@@ -7,7 +7,7 @@ import { StageBadge, SenfPill } from "@/components/ui/badge";
 import { LogActivity } from "@/components/log-activity";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { safeUrl } from "@/lib/utils";
-import { formatToman, formatNumber, toFa } from "@/lib/format";
+import { formatRial, formatNumber, toFa } from "@/lib/format";
 
 export default async function CompanyDetailPage({
   params,
@@ -37,8 +37,8 @@ export default async function CompanyDetailPage({
     .reduce((s, d) => s + Number(d.value), 0);
   const summary = [
     { label: "مخاطبین", value: formatNumber(company.contacts.length) },
-    { label: "معاملات باز", value: formatToman(openValue) },
-    { label: "درآمد موفق", value: formatToman(wonValue) },
+    { label: "معاملات باز", value: formatRial(openValue) },
+    { label: "درآمد موفق", value: formatRial(wonValue) },
   ];
 
   return (
@@ -157,7 +157,7 @@ export default async function CompanyDetailPage({
                     <span className="font-medium">{d.title}</span>
                     <span className="flex items-center gap-2">
                       <span className="text-muted">
-                        {formatToman(Number(d.value))}
+                        {formatRial(Number(d.value))}
                       </span>
                       <StageBadge stage={d.stage} />
                     </span>

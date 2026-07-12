@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import { SelectFilter } from "@/components/select-filter";
-import { formatToman, formatNumber } from "@/lib/format";
+import { requireUser, canManageUsers } from "@/lib/rbac";
+import { formatRial, formatNumber } from "@/lib/format";
 import { DealForm } from "./deal-form";
 import { KanbanBoard, type DealCard } from "./kanban-board";
 import {
@@ -23,6 +24,7 @@ export default async function DealsPage({
   searchParams: Promise<{ q?: string; company?: string; owner?: string }>;
 }) {
   const { q, company, owner } = await searchParams;
+  const user = await requireUser();
 
   const and: Prisma.DealWhereInput[] = [];
   if (q) and.push({ title: { contains: q, mode: "insensitive" } });
@@ -91,7 +93,7 @@ export default async function DealsPage({
     <div className="flex h-full flex-col">
       <PageHeader
         title="معاملات"
-        subtitle={`${formatNumber(deals.length)} معامله · ${formatToman(openValue)} معاملات باز`}
+        subtitle={`${formatNumber(deals.length)} معامله · ${formatRial(openValue)} معاملات باز`}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput placeholder="جستجوی عنوان معامله…" />
@@ -122,6 +124,7 @@ export default async function DealsPage({
         moveDeal={moveDealStage}
         updateDeal={updateDeal}
         deleteDeal={deleteDeal}
+        canDelete={canManageUsers(user.role)}
       />
     </div>
   );

@@ -126,6 +126,18 @@ export async function authenticate(
 }
 
 export async function logout() {
+  // Record the member's clock-out (latest logout of the day) before ending
+  // the session. Owner/admin aren't tracked.
+  try {
+    const { getSessionUser } = await import("@/lib/rbac");
+    const u = await getSessionUser();
+    if (u && u.role === "MEMBER") {
+      const { recordClockOut } = await import("@/lib/attendance");
+      await recordClockOut(u.id);
+    }
+  } catch {
+    /* non-fatal — never block logout */
+  }
   await signOut({ redirectTo: "/login" });
 }
 

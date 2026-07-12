@@ -117,7 +117,9 @@ export async function toggleReminderDone(id: string, done: boolean): Promise<For
 export async function deleteReminder(id: string): Promise<FormResult> {
   const user = await requireUser();
   try {
-    await assertCanEdit(id, user.id, user.role);
+    if (!canManageUsers(user.role)) {
+      throw new Error("فقط مدیر یا مالک می‌تواند حذف کند.");
+    }
     await prisma.reminder.delete({ where: { id } });
     revalidatePath("/calendar");
   } catch (e) {
