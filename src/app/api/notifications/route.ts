@@ -5,8 +5,6 @@ import { getApprovedSessionUser } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 
-const FEED_LIMIT = 20;
-
 /**
  * Lazily materialize REMINDER notifications for reminders that have become due
  * and are visible to this user (public, or created by them). Deduped on
@@ -53,31 +51,45 @@ async function materializeDueReminders(userId: string) {
   });
 }
 
+// Cap on retained, already-seen ("archived") notifications per user. When a
+// user acknowledges more, the oldest seen ones are pruned.
+const ARCHIVE_LIMIT = 30;
+
+const NOTIF_SELECT = {
+  id: true,
+  type: true,
+  title: true,
+  body: true,
+  href: true,
+  createdAt: true,
+  read: true,
+} as const;
+
 export async function GET() {
   const user = await getApprovedSessionUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   await materializeDueReminders(user.id);
 
-  const [items, unread] = await Promise.all([
+  // active = not yet acknowledged (shown as persistent cards + drive the 5/10
+  // thresholds). archived = acknowledged history shown in the bell (max 30).
+  const [active, archived, activeCount] = await Promise.all([
     prisma.notification.findMany({
-      where: { userId: user.id },
-      orderBy: [{ read: "asc" }, { createdAt: "desc" }],
-      take: FEED_LIMIT,
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        body: true,
-        href: true,
-        createdAt: true,
-        read: true,
-      },
+      where: { userId: user.id, read: false },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: NOTIF_SELECT,
+    }),
+    prisma.notification.findMany({
+      where: { userId: user.id, read: true },
+      orderBy: { createdAt: "desc" },
+      take: ARCHIVE_LIMIT,
+      select: NOTIF_SELECT,
     }),
     prisma.notification.count({ where: { userId: user.id, read: false } }),
   ]);
 
-  return NextResponse.json({ unread, items });
+  return NextResponse.json({ activeCount, active, archived });
 }
 
 const postSchema = z.object({
@@ -96,6 +108,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
+  // Acknowledge ("مشاهده شد"): move the selected (or all) active notifs into the
+  // seen archive.
   if (parsed.all) {
     await prisma.notification.updateMany({
       where: { userId: user.id, read: false },
@@ -105,6 +119,20 @@ export async function POST(req: Request) {
     await prisma.notification.updateMany({
       where: { userId: user.id, id: { in: parsed.ids } },
       data: { read: true },
+    });
+  }
+
+  // Keep only the newest ARCHIVE_LIMIT seen notifs; prune the oldest.
+  const keep = await prisma.notification.findMany({
+    where: { userId: user.id, read: true },
+    orderBy: { createdAt: "desc" },
+    skip: ARCHIVE_LIMIT,
+    take: 200,
+    select: { id: true },
+  });
+  if (keep.length > 0) {
+    await prisma.notification.deleteMany({
+      where: { userId: user.id, id: { in: keep.map((n) => n.id) } },
     });
   }
 

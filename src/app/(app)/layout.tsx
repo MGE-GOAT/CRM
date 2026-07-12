@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/sidebar";
 import { UserMenu } from "@/components/user-menu";
 import { MobileNav } from "@/components/mobile-nav";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NotificationsProvider } from "@/components/notifications/notifications-provider";
 
 export default async function AppLayout({
   children,
@@ -14,6 +15,7 @@ export default async function AppLayout({
   const showAdmin = canManageUsers(user.role);
 
   return (
+    <NotificationsProvider>
     <div className="flex h-screen overflow-hidden">
       <Sidebar canManageUsers={showAdmin} />
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -33,5 +35,6 @@ export default async function AppLayout({
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
+    </NotificationsProvider>
   );
 }

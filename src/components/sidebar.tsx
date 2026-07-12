@@ -14,8 +14,10 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toFa } from "@/lib/format";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useNotifications } from "@/components/notifications/notifications-provider";
 
 const NAV = [
   { href: "/", label: "گزارش‌ها", icon: BarChart3 },
@@ -32,11 +34,13 @@ function NavRow({
   label,
   Icon,
   active,
+  count = 0,
 }: {
   href: string;
   label: string;
   Icon: typeof Users;
   active: boolean;
+  count?: number;
 }) {
   return (
     <Link
@@ -57,12 +61,21 @@ function NavRow({
       )}
       <Icon size={18} aria-hidden="true" />
       {label}
+      {count > 0 && (
+        <span
+          aria-label={`${count} اعلان دیده‌نشده`}
+          className="ms-auto flex min-w-5 items-center justify-center rounded-full bg-[var(--gold-to)] px-1.5 text-[11px] font-bold leading-5 text-[#241a05]"
+        >
+          {toFa(count > 99 ? "+۹۹" : String(count))}
+        </span>
+      )}
     </Link>
   );
 }
 
 export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
   const pathname = usePathname();
+  const { sectionCount } = useNotifications();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -74,7 +87,14 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
       </div>
       <nav aria-label="منوی اصلی" className="flex-1 space-y-1 px-3 py-2">
         {NAV.map(({ href, label, icon }) => (
-          <NavRow key={href} href={href} label={label} Icon={icon} active={isActive(href)} />
+          <NavRow
+            key={href}
+            href={href}
+            label={label}
+            Icon={icon}
+            active={isActive(href)}
+            count={sectionCount(href)}
+          />
         ))}
       </nav>
       <div className="space-y-1 border-t border-white/10 px-3 py-2">
@@ -84,6 +104,7 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
             label="ارسالی‌ها"
             Icon={Send}
             active={pathname.startsWith("/factors/sent")}
+            count={sectionCount("/factors/sent")}
           />
         )}
         {canManageUsers && (
@@ -92,6 +113,7 @@ export function Sidebar({ canManageUsers }: { canManageUsers: boolean }) {
             label="تیم و تنظیمات"
             Icon={Settings}
             active={pathname.startsWith("/settings")}
+            count={sectionCount("/settings/users")}
           />
         )}
         <div className="flex items-center justify-between px-1 pt-1">
