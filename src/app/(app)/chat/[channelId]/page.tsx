@@ -89,8 +89,9 @@ export default async function ChannelPage({
     name: m.user.name,
     avatarColor: m.user.avatarColor,
     isCreator: m.user.id === channel.createdById,
-    // Actor may kick this member if their rank is >= the member's.
-    removable: myRank >= roleRank(m.user.role),
+    // Actor may kick this member if their rank is >= the member's — but the
+    // OWNER is a permanent member of every channel and can't be removed.
+    removable: m.user.role !== "OWNER" && myRank >= roleRank(m.user.role),
   }));
 
   // Active users not yet in the channel — candidates to add.

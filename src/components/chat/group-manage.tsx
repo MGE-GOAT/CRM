@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, UserPlus, X, Trash2, Crown } from "lucide-react";
+import { UserPlus, X, Trash2, Crown } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Textarea, SubmitButton } from "@/components/ui/form";
@@ -60,11 +60,11 @@ export function GroupManage({
       trigger={(open) => (
         <button
           onClick={open}
-          aria-label="مدیریت کانال"
-          title="مدیریت کانال"
-          className="rounded-lg p-1.5 text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
+          aria-label="اعضا و مدیریت کانال"
+          title="اعضا و افزودن عضو"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
         >
-          <Settings size={18} aria-hidden="true" />
+          <UserPlus size={15} aria-hidden="true" /> اعضا
         </button>
       )}
     >

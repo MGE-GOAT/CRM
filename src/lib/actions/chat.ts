@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers, roleRank } from "@/lib/rbac";
+import { requireUser, canManageUsers, roleRank, systemOwnerId } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { saveUpload } from "@/lib/storage";
@@ -279,6 +279,10 @@ export async function removeChannelMember(channelId: string, userId: string): Pr
   const user = await requireUser();
   try {
     await assertGroupMember(channelId, user.id);
+    // The owner is a permanent member of every channel — nobody (not even the
+    // owner) can be removed if they are the system owner.
+    const ownerId = await systemOwnerId(user.id);
+    if (userId === ownerId) throw new Error("مالک عضو ثابت هر کانال است و حذف نمی‌شود.");
     // Re-read the target's rank + delete atomically (serializable) so a
     // concurrent promotion can't let a lower-rank actor kick a higher one.
     await prisma.$transaction(
@@ -316,18 +320,24 @@ export async function createChannel(
     const description =
       z.string().max(500).optional().parse(formData.get("description") || undefined) ?? null;
 
-    // add all active users to a public channel
-    const users = await prisma.user.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    });
+    // The creator picks who joins. The creator and the OWNER are always
+    // included (the owner is a permanent, non-deselectable member of every
+    // channel); any other selected members are validated against active users.
+    const activeIds = new Set(
+      (await prisma.user.findMany({ where: { isActive: true }, select: { id: true } })).map(
+        (u) => u.id,
+      ),
+    );
+    const ownerId = await systemOwnerId(user.id);
+    const selected = formData.getAll("members").map(String).filter((id) => activeIds.has(id));
+    const memberIds = [...new Set([user.id, ownerId, ...selected])];
 
     const channel = await prisma.channel.create({
       data: {
         name,
         description,
         createdById: user.id,
-        members: { create: users.map((u) => ({ userId: u.id })) },
+        members: { create: memberIds.map((id) => ({ userId: id })) },
       },
     });
     revalidatePath("/chat");

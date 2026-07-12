@@ -21,11 +21,13 @@ type UserOption = { id: string; name: string; avatarColor: string };
 export function ChannelSidebar({
   channels,
   users,
+  ownerId,
   createChannel,
   startDirectMessage,
 }: {
   channels: Channel[];
   users: UserOption[];
+  ownerId: string;
   createChannel: (formData: FormData) => Promise<{ id?: string; error?: string }>;
   startDirectMessage: (userId: string) => Promise<{ id?: string; error?: string }>;
 }) {
@@ -60,7 +62,7 @@ export function ChannelSidebar({
             <span className="text-xs font-medium tracking-wide text-muted">
               کانال‌ها
             </span>
-            <NewChannelButton createChannel={createChannel} />
+            <NewChannelButton createChannel={createChannel} users={users} ownerId={ownerId} />
           </div>
           {groups.map((c) => (
             <ChannelLink key={c.id} channel={c} active={activeId === c.id} />
@@ -136,8 +138,12 @@ function ChannelLink({
 
 function NewChannelButton({
   createChannel,
+  users,
+  ownerId,
 }: {
   createChannel: (formData: FormData) => Promise<{ id?: string; error?: string }>;
+  users: UserOption[];
+  ownerId: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -180,9 +186,41 @@ function NewChannelButton({
           <Field label="توضیحات">
             <Input name="description" placeholder="این کانال درباره چیست؟" />
           </Field>
-          <p className="flex items-center gap-1 text-xs text-muted">
-            <MessageCircle size={13} /> همه اعضای تیم اضافه خواهند شد.
-          </p>
+
+          {/* Member picker — you and the owner are always in; pick the rest. */}
+          <div>
+            <span className="mb-1.5 block text-sm font-medium">اعضا</span>
+            <p className="mb-2 flex items-center gap-1 text-xs text-muted">
+              <MessageCircle size={13} /> شما و مالک همیشه عضو هستید؛ بقیه را انتخاب کنید.
+            </p>
+            <div className="max-h-52 space-y-0.5 overflow-y-auto rounded-lg border border-border p-1">
+              {users.map((u) => {
+                const isOwner = u.id === ownerId;
+                return (
+                  <label
+                    key={u.id}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm",
+                      isOwner ? "opacity-70" : "cursor-pointer hover:bg-[var(--gold-tint)]",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      name="members"
+                      value={u.id}
+                      defaultChecked={isOwner}
+                      disabled={isOwner}
+                      className="accent-[var(--gold-ink)]"
+                    />
+                    <Avatar name={u.name} color={u.avatarColor} size={22} />
+                    <span>{u.name}</span>
+                    {isOwner && <span className="text-xs text-muted">(مالک · همیشه)</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex justify-end pt-2">
             <SubmitButton>ایجاد کانال</SubmitButton>
           </div>
