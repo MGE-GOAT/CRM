@@ -11,6 +11,7 @@ import { SOURCE_KEYS } from "@/lib/factor";
 import { formatNumber, formatDate, toFa } from "@/lib/format";
 import { factorPayable } from "@/lib/factor-total";
 import type { SourceKind } from "@prisma/client";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 
 export default async function SentFactorsPage() {
   const user = await requireUser();
@@ -72,6 +73,7 @@ export default async function SentFactorsPage() {
 
   return (
     <div>
+      <AutoRefresh interval={20000} />
       <PageHeader title="ارسالی‌ها" subtitle={`${formatNumber(factors.length)} مورد`} />
 
       <div className="space-y-5 p-4 sm:p-6">

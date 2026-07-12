@@ -8,6 +8,7 @@ import { formatRelative, formatNumber } from "@/lib/format";
 import { activityTypeLabel } from "@/lib/labels";
 import { AttendanceSection } from "./attendance-section";
 import { MonthArchiveSection } from "./month-archive-section";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 import {
   normalizeMonth,
   monthRange,
@@ -78,6 +79,7 @@ export default async function DashboardPage({
 
   return (
     <div>
+      <AutoRefresh interval={25000} />
       <PageHeader title="گزارش‌ها" subtitle="نمای کلی فروش تیم شما" />
       <div className="space-y-6 p-4 sm:p-6">
         {/* Stat cards — one gold hero + four demoted tiles */}

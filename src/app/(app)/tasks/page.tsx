@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { TaskForm } from "./task-form";
 import { TaskItem } from "./task-item";
 import { createTask } from "@/lib/actions/tasks";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { formatNumber } from "@/lib/format";
 
 /** Editorial section head: ink baseline, quiet-confident title, count chip. */
@@ -70,6 +71,7 @@ export default async function TasksPage() {
 
   return (
     <div>
+      <AutoRefresh interval={20000} />
       <PageHeader
         title="وظایف"
         subtitle={`${formatNumber(open.length)} باز · ${formatNumber(done.length)} انجام‌شده`}

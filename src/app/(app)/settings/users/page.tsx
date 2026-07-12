@@ -7,6 +7,7 @@ import { isOwner } from "@/lib/rbac";
 import { UserForm } from "./user-form";
 import { RoleSelect, ActiveToggle, ResetPasswordButton } from "./user-row-actions";
 import { JoinRequests, type JoinRequest } from "./join-requests";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { roleLabel } from "@/lib/labels";
 
 export default async function UsersPage() {
@@ -45,6 +46,8 @@ export default async function UsersPage() {
       />
 
       <div className="p-4 sm:p-6">
+        {/* Owner-only: poll so new login requests appear without a manual refresh. */}
+        {owner && <AutoRefresh interval={12000} />}
         {owner && <JoinRequests requests={joinRequests} />}
         <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
           <table className="w-full text-sm">

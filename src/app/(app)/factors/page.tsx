@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { FactorForm, type ContactOption } from "./factor-form";
 import { FactorsBrowser, type FactorLite, type SalesPerson } from "./factors-browser";
 import { FactorNumberSetting } from "./factor-number-setting";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { createFactor } from "@/lib/actions/factors";
 import { OWNER_ONLY_STATES, isPreFactor, getNextFactorNumber } from "@/lib/factor";
 import { factorPayable } from "@/lib/factor-total";
@@ -89,6 +90,7 @@ export default async function FactorsPage() {
 
   return (
     <div>
+      <AutoRefresh interval={20000} />
       <PageHeader
         title="فاکتورها"
         subtitle={`${formatNumber(factors.length)} فاکتور`}

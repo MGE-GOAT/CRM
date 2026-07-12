@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser, isOwner, canManageUsers } from "@/lib/rbac";
+import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { FactorActions } from "../factor-actions";
 import { FactorForm, type FactorInitial } from "../factor-form";
 import { ShareFactor, type ShareChannel } from "../share-factor";
@@ -115,6 +116,7 @@ export default async function FactorDetailPage({
 
   return (
     <div className="p-4 sm:p-6">
+      <AutoRefresh interval={20000} />
       <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/factors"
