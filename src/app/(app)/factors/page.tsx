@@ -29,7 +29,8 @@ export default async function FactorsPage() {
   const [factors, users, contacts] = await Promise.all([
     prisma.factor.findMany({
       // Members only ever see pre-factor states; owner+admin see everything.
-      where: isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } },
+      // parentFactorId:null → hide per-source child factors from the main list.
+      where: { parentFactorId: null, ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }) },
       orderBy: [{ createdAt: "desc" }],
       include: {
         items: { select: { quantity: true, unitPrice: true } },

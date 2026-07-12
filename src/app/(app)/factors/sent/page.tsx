@@ -21,7 +21,9 @@ export default async function SentFactorsPage() {
 
   const [factors, options] = await Promise.all([
     prisma.factor.findMany({
-      where: { state: { in: ["SENDING", "EXIT"] } },
+      // Top-level sent factors only — child (per-source) factors are shown
+      // inside each ارسالی, never as their own row here.
+      where: { parentFactorId: null, state: { in: ["SENDING", "EXIT"] } },
       orderBy: [{ sentAt: "desc" }],
       include: {
         items: { select: { quantity: true, unitPrice: true } },

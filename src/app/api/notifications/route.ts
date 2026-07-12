@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getApprovedSessionUser } from "@/lib/rbac";
+import { navKeyFor } from "@/lib/notif-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,9 @@ export async function GET() {
 
   // active = not yet acknowledged (shown as persistent cards + drive the 5/10
   // thresholds). archived = acknowledged history shown in the bell (max 30).
-  const [active, archived, activeCount] = await Promise.all([
+  // unviewed = not yet opened on its page — drives the per-section sidebar
+  // badges, which clear only on visiting the page, never on acknowledgement.
+  const [active, archived, activeCount, unviewed] = await Promise.all([
     prisma.notification.findMany({
       where: { userId: user.id, read: false },
       orderBy: { createdAt: "desc" },
@@ -87,14 +90,28 @@ export async function GET() {
       select: NOTIF_SELECT,
     }),
     prisma.notification.count({ where: { userId: user.id, read: false } }),
+    prisma.notification.findMany({
+      where: { userId: user.id, viewed: false },
+      select: { href: true },
+      take: 500,
+    }),
   ]);
 
-  return NextResponse.json({ activeCount, active, archived });
+  const sectionCounts: Record<string, number> = {};
+  for (const n of unviewed) {
+    const key = navKeyFor(n.href);
+    if (key) sectionCounts[key] = (sectionCounts[key] ?? 0) + 1;
+  }
+
+  return NextResponse.json({ activeCount, active, archived, sectionCounts });
 }
 
 const postSchema = z.object({
   ids: z.array(z.string()).max(100).optional(),
   all: z.boolean().optional(),
+  // Visiting a page: clear that section's sidebar badge (marks its notifs
+  // `viewed`). Independent of acknowledgement — does NOT touch `read`.
+  view: z.string().max(200).optional(),
 });
 
 export async function POST(req: Request) {
@@ -106,6 +123,28 @@ export async function POST(req: Request) {
     parsed = postSchema.parse(await req.json());
   } catch {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+
+  // Visiting a page ("open and see the thing"): mark this section's unviewed
+  // notifs as viewed so its sidebar badge clears. Never affects `read`, so the
+  // persistent cards / bell / disclaimer stay until explicitly acknowledged.
+  if (parsed.view) {
+    const key = navKeyFor(parsed.view);
+    if (key) {
+      const pending = await prisma.notification.findMany({
+        where: { userId: user.id, viewed: false },
+        select: { id: true, href: true },
+        take: 500,
+      });
+      const ids = pending.filter((n) => navKeyFor(n.href) === key).map((n) => n.id);
+      if (ids.length > 0) {
+        await prisma.notification.updateMany({
+          where: { userId: user.id, id: { in: ids } },
+          data: { viewed: true },
+        });
+      }
+    }
+    return NextResponse.json({ ok: true });
   }
 
   // Acknowledge ("مشاهده شد"): move the selected (or all) active notifs into the

@@ -96,6 +96,10 @@ model Notification {
   // Stable source key for dedupe (e.g. a Reminder id for REMINDER notifications).
   sourceId  String?
   read      Boolean          @default(false)
+  // Whether the user has actually opened the section this notification links to.
+  // Distinct from `read` (acknowledged via «مشاهده شد»): the per-section sidebar
+  // badge clears only when the page is visited, never on acknowledgement.
+  viewed    Boolean          @default(false)
   createdAt DateTime         @default(now())
 
   // Dedupe key for materialized notifications (e.g. one REMINDER per reminder
@@ -104,6 +108,7 @@ model Notification {
   @@unique([userId, type, sourceId])
   @@index([userId])
   @@index([userId, read, createdAt])
+  @@index([userId, viewed])
 }
 
 // ---------------------------------------------------------------------------
@@ -480,11 +485,22 @@ model Factor {
   items   FactorItem[]
   sources FactorSourceEntry[]
 
+  // Per-source child factors. A "sent" factor with multiple منابع ارسال clones
+  // one editable/printable child factor per source. Children carry their own
+  // number and are EXCLUDED from the main list, dashboard, reports and monthly
+  // counts (always filter `parentFactorId: null` for top-level factors).
+  parentFactorId String?
+  parent         Factor?     @relation("FactorTree", fields: [parentFactorId], references: [id], onDelete: Cascade)
+  children       Factor[]    @relation("FactorTree")
+  sourceKind     SourceKind? // which source this child represents (null on top-level)
+  childOfEntry   FactorSourceEntry? @relation("EntryChild")
+
   @@unique([monthKey, number])
   @@index([state])
   @@index([creatorId])
   @@index([contactId])
   @@index([monthKey])
+  @@index([parentFactorId])
 }
 
 model FactorItem {
@@ -510,6 +526,10 @@ model FactorSourceEntry {
   checked  Boolean    @default(false) // true = آرشیو; false = در حال انجام
   checkedAt   DateTime?
   checkedById String?
+
+  // The cloned, independently editable/printable factor for this source.
+  childFactorId String? @unique
+  child         Factor? @relation("EntryChild", fields: [childFactorId], references: [id], onDelete: SetNull)
 
   @@unique([factorId, source])
   @@index([factorId])

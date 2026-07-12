@@ -43,10 +43,14 @@ export default async function DashboardPage({
     prisma.company.count(),
     prisma.task.count({ where: { completed: false } }),
     // Pre-factors awaiting the owner's action (INITIAL/FOLLOWING_UP).
-    prisma.factor.count({ where: { state: { in: ["INITIAL", "FOLLOWING_UP"] } } }),
+    prisma.factor.count({ where: { parentFactorId: null, state: { in: ["INITIAL", "FOLLOWING_UP"] } } }),
     // Factors marked paid within the selected month.
     prisma.factor.count({
-      where: { paidAt: { gte: start, lt: end }, state: { in: ["PAID", "SENDING", "EXIT"] } },
+      where: {
+        parentFactorId: null,
+        paidAt: { gte: start, lt: end },
+        state: { in: ["PAID", "SENDING", "EXIT"] },
+      },
     }),
     prisma.activity.findMany({
       take: 8,

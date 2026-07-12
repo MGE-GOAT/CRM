@@ -42,6 +42,7 @@ export async function buildMonthlyBackup(month: string, db: Db = prisma) {
     }),
     db.factor.findMany({
       where: {
+        parentFactorId: null,
         paidAt: { gte: start, lt: end },
         state: { in: ["PAID", "SENDING", "EXIT"] },
       },
@@ -116,10 +117,17 @@ export async function buildMonthlyBackup(month: string, db: Db = prisma) {
 export async function buildMonthArchive(month: string, db: Db = prisma) {
   const base = await buildMonthlyBackup(month, db);
   const factors = await db.factor.findMany({
-    where: { monthKey: month },
+    // Top-level factors only; per-source children are captured via each
+    // parent's `sources` relation (with their childFactorId), not as extra rows.
+    where: { monthKey: month, parentFactorId: null },
     include: {
       items: { orderBy: { row: "asc" } },
-      sources: true,
+      // Include each source's child factor (number + edited items) so the
+      // per-source amounts survive the purge inside this one archive row.
+      sources: {
+        orderBy: { source: "asc" },
+        include: { child: { include: { items: { orderBy: { row: "asc" } } } } },
+      },
       creator: { select: { name: true } },
     },
     orderBy: [{ number: "asc" }],
@@ -169,6 +177,22 @@ export async function buildMonthArchive(month: string, db: Db = prisma) {
         source: s.source,
         checked: s.checked,
         checkedAt: s.checkedAt ? s.checkedAt.toISOString() : null,
+        // The source's own (edited) child factor, preserved before purge.
+        childFactor: s.child
+          ? {
+              number: s.child.number,
+              payableRial: Math.round(factorPayable(s.child)),
+              discount: Number(s.child.discount),
+              vat: Number(s.child.vat),
+              items: s.child.items.map((it) => ({
+                row: it.row,
+                name: it.name,
+                quantity: Number(it.quantity),
+                unitPrice: Number(it.unitPrice),
+                description: it.description,
+              })),
+            }
+          : null,
       })),
     })),
   };

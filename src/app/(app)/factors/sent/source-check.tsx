@@ -52,7 +52,7 @@ export function SourceCheck({
         onClick={() => run(() => checkSourceEntry(entryId))}
         className="btn-gold inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs"
       >
-        <Check size={14} aria-hidden="true" /> علامت انجام‌شده
+        <Check size={14} aria-hidden="true" /> خروج
       </button>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </div>

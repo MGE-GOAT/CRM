@@ -88,6 +88,89 @@ export async function claimFactorNumber(): Promise<number> {
   return row.next - 1;
 }
 
+/** Sentinel to roll back the clone transaction when a concurrent render won. */
+class AlreadyLinkedError extends Error {}
+
+/**
+ * Ensure each source entry of a sent factor has its own cloned child factor
+ * (own number, copied buyer/seller + line items). Idempotent — only creates
+ * children for entries that don't have one yet. Safe to call on every render of
+ * the ارسالی detail page (backfills existing factors too).
+ */
+export async function ensureSourceChildren(parentId: string): Promise<void> {
+  const parent = await prisma.factor.findUnique({
+    where: { id: parentId },
+    include: {
+      items: { orderBy: { row: "asc" } },
+      sources: { where: { childFactorId: null }, orderBy: { source: "asc" } },
+    },
+  });
+  // Only top-level (non-child) sent factors spawn children.
+  if (!parent || parent.parentFactorId || parent.sources.length === 0) return;
+
+  for (const entry of parent.sources) {
+    const itemsData = parent.items.map((it) => ({
+      row: it.row,
+      name: it.name,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      description: it.description,
+    }));
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const number = await claimFactorNumber();
+      try {
+        // Create the child AND link the entry atomically: if the entry was
+        // already linked by a concurrent render, the guard trips and the whole
+        // transaction rolls back — the just-created child is never committed, so
+        // there are no orphan children or stray committed rows.
+        await prisma.$transaction(async (tx) => {
+          const child = await tx.factor.create({
+            data: {
+              number,
+              monthKey: parent.monthKey,
+              state: parent.state,
+              paymentKind: parent.paymentKind,
+              parentFactorId: parent.id,
+              sourceKind: entry.source,
+              contactId: parent.contactId,
+              buyerName: parent.buyerName,
+              buyerPhone: parent.buyerPhone,
+              buyerAddress: parent.buyerAddress,
+              buyerEconomicCode: parent.buyerEconomicCode,
+              buyerNationalId: parent.buyerNationalId,
+              buyerRegistrationNumber: parent.buyerRegistrationNumber,
+              buyerPostalCode: parent.buyerPostalCode,
+              sellerName: parent.sellerName,
+              sellerAddress: parent.sellerAddress,
+              sellerPhone: parent.sellerPhone,
+              sellerMobile: parent.sellerMobile,
+              sellerInstagram: parent.sellerInstagram,
+              sellerWebsite: parent.sellerWebsite,
+              discount: parent.discount,
+              vat: parent.vat,
+              notes: parent.notes,
+              creatorId: parent.creatorId,
+              confirmedById: parent.confirmedById,
+              items: { create: itemsData },
+            },
+          });
+          const linked = await tx.factorSourceEntry.updateMany({
+            where: { id: entry.id, childFactorId: null },
+            data: { childFactorId: child.id },
+          });
+          if (linked.count === 0) throw new AlreadyLinkedError();
+        });
+        break;
+      } catch (err) {
+        if (err instanceof AlreadyLinkedError) break; // another render linked it
+        const code = (err as { code?: string }).code;
+        if (code === "P2002" && attempt < 4) continue; // number taken — retry
+        throw err;
+      }
+    }
+  }
+}
+
 /** The number the next factor will receive (for display / the owner setter). */
 export async function getNextFactorNumber(): Promise<number> {
   const row = await prisma.factorCounter.findUnique({ where: { id: COUNTER_ID } });

@@ -28,7 +28,9 @@ export default async function ContactDetailPage({
       owner: { select: { name: true, avatarColor: true } },
       factors: {
         // Members only see pre-factor states; managers see everything.
-        where: isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } },
+        // parentFactorId:null → exclude per-source child factors (they clone
+        // the contact) so the contact's list/totals don't double-count.
+        where: { parentFactorId: null, ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }) },
         orderBy: { createdAt: "desc" },
         include: { items: { select: { quantity: true, unitPrice: true } } },
       },

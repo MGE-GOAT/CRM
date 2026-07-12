@@ -27,6 +27,7 @@ export default async function CompanyDetailPage({
     }),
     prisma.factor.findMany({
       where: {
+        parentFactorId: null, // exclude per-source child factors
         contact: { companyId: id },
         ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }),
       },

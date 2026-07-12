@@ -11,6 +11,7 @@ import {
   CheckCheck,
   AlertTriangle,
   ListChecks,
+  X,
 } from "lucide-react";
 import { formatNumber, formatRelative } from "@/lib/format";
 import { useNotifications, type Notif, type NotifType } from "./notifications-provider";
@@ -18,6 +19,7 @@ import { useNotifications, type Notif, type NotifType } from "./notifications-pr
 const STACK_VISIBLE = 4; // unseen cards shown before collapsing into "manage"
 const BANNER_AT = 5; // persistent banner when this many go unseen
 const BLOCK_AT = 10; // blocking overlay when this many go unseen
+const BELL_LIMIT = 30; // full inbox history kept in the bell (seen + unseen)
 
 const TYPE_ICON: Record<NotifType, typeof Bell> = {
   MESSAGE: MessageSquare,
@@ -34,8 +36,22 @@ export function NotificationBell() {
   const { active, archived, activeCount, acknowledge } = useNotifications();
   const [bellOpen, setBellOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
+  // The blocker opens at 10 unseen; acknowledging ANY one (open it or tick it)
+  // releases it. It re-arms once the user drops back below the threshold.
+  const [blockDismissed, setBlockDismissed] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const bellRef = useRef<HTMLDivElement>(null);
+
+  // Re-arm the dismissible disclaimer once the user drops back below the threshold.
+  useEffect(() => {
+    if (activeCount < BANNER_AT) setDisclaimerDismissed(false);
+  }, [activeCount]);
+
+  // Once back below the threshold, re-arm the blocker for next time it's hit.
+  useEffect(() => {
+    if (activeCount < BLOCK_AT) setBlockDismissed(false);
+  }, [activeCount]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -55,8 +71,24 @@ export function NotificationBell() {
     return acknowledge(ids);
   };
 
+  // Acknowledging while blocked releases the blocker (see one / check one).
+  const ackAndRelease = (ids?: string[]) => {
+    setBlockDismissed(true);
+    return ack(ids);
+  };
+
   const showBanner = activeCount >= BANNER_AT && activeCount < BLOCK_AT;
-  const showBlock = activeCount >= BLOCK_AT;
+  const showBlock = activeCount >= BLOCK_AT && !blockDismissed;
+
+  // The bell is a full inbox: every notification (seen or unseen), newest first,
+  // capped at BELL_LIMIT. Unseen rows are marked and stay acknowledge-able here.
+  const bellItems = useMemo(() => {
+    const byId = new Map<string, Notif>();
+    for (const n of [...active, ...archived]) byId.set(n.id, n);
+    return [...byId.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, BELL_LIMIT);
+  }, [active, archived]);
 
   return (
     <>
@@ -83,7 +115,7 @@ export function NotificationBell() {
             className="absolute end-0 z-30 mt-2 w-80 animate-in overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-lg)]"
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="text-sm font-semibold">اعلان‌های دیده‌شده</span>
+              <span className="text-sm font-semibold">اعلان‌ها</span>
               {activeCount > 0 && (
                 <button
                   onClick={() => {
@@ -97,12 +129,17 @@ export function NotificationBell() {
               )}
             </div>
             <div className="max-h-96 overflow-y-auto">
-              {archived.length === 0 ? (
+              {bellItems.length === 0 ? (
                 <div className="px-4 py-10 text-center text-sm text-faint">اعلانی وجود ندارد</div>
               ) : (
                 <ul>
-                  {archived.map((n) => (
-                    <SeenRow key={n.id} n={n} onNavigate={() => setBellOpen(false)} />
+                  {bellItems.map((n) => (
+                    <SeenRow
+                      key={n.id}
+                      n={n}
+                      onNavigate={() => setBellOpen(false)}
+                      onAck={n.read ? undefined : () => ack([n.id])}
+                    />
                   ))}
                 </ul>
               )}
@@ -111,9 +148,9 @@ export function NotificationBell() {
         )}
       </div>
 
-      {/* Persistent stack of unseen notifs (bottom-start). */}
+      {/* Persistent stack of unseen notifs (bottom-left, clear of the sidebar). */}
       {!showBlock && activeCount > 0 && !manageOpen && (
-        <div className="pointer-events-none fixed bottom-4 start-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2">
+        <div className="pointer-events-none fixed bottom-4 left-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2">
           {active.slice(0, STACK_VISIBLE).map((n) => (
             <ActiveCard key={n.id} n={n} onAck={() => ack([n.id])} />
           ))}
@@ -128,35 +165,41 @@ export function NotificationBell() {
         </div>
       )}
 
-      {/* Escalation banner (5+ unseen) — sits below the 64px app header so the
-          bell/menu stay clickable. */}
-      {showBanner && (
-        <div className="fixed inset-x-0 top-16 z-30 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-red-600 px-4 py-2 text-sm font-medium text-white">
-          <AlertTriangle size={16} aria-hidden="true" />
-          <span>{formatNumber(activeCount)} اعلان دیده‌نشده دارید. لطفاً بررسی کنید.</span>
+      {/* Compact, dismissible disclaimer (5–9 unseen) — palette-matched. */}
+      {showBanner && !disclaimerDismissed && (
+        <div className="fixed left-1/2 top-20 z-30 flex w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 items-center gap-2.5 rounded-xl border border-[color:var(--gold-hair)] bg-[var(--gold-tint)] px-3.5 py-2.5 text-sm text-[color:var(--gold-ink)] shadow-[var(--shadow-md)]">
+          <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            {formatNumber(activeCount)} اعلان دیده‌نشده دارید.
+          </span>
           <button
             onClick={() => setManageOpen(true)}
-            className="rounded-lg bg-white/20 px-2.5 py-1 text-xs font-semibold hover:bg-white/30"
+            className="shrink-0 rounded-lg bg-[color:var(--gold-ink)] px-2.5 py-1 text-xs font-semibold text-white hover:opacity-90"
           >
-            بررسی اعلان‌ها
+            بررسی
+          </button>
+          <button
+            onClick={() => setDisclaimerDismissed(true)}
+            aria-label="بستن"
+            className="shrink-0 -me-1 rounded p-1 text-[color:var(--gold-ink)]/70 hover:text-[color:var(--gold-ink)]"
+          >
+            <X size={15} aria-hidden="true" />
           </button>
         </div>
       )}
 
-      {/* Manage panel (checkbox bulk, like contacts). */}
-      {manageOpen && !showBlock && (
+      {/* Manage panel — bottom-left when opened normally, or a blocking modal at
+          10+ unseen (the menu itself blocks until they're reviewed & cleared). */}
+      {(manageOpen || showBlock) && (
         <ManagePanel
           items={active}
           selected={selected}
           setSelected={setSelected}
-          onAck={ack}
+          onAck={showBlock ? ackAndRelease : ack}
+          blocking={showBlock}
+          onOpen={(id) => ackAndRelease([id])}
           onClose={() => setManageOpen(false)}
         />
-      )}
-
-      {/* Blocking overlay (10+ unseen) — must review to continue. */}
-      {showBlock && (
-        <BlockOverlay items={active} selected={selected} setSelected={setSelected} onAck={ack} />
       )}
     </>
   );
@@ -201,21 +244,51 @@ function ActiveCard({ n, onAck }: { n: Notif; onAck: () => void }) {
   );
 }
 
-/** Read-only row for the bell's seen history. */
-function SeenRow({ n, onNavigate }: { n: Notif; onNavigate?: () => void }) {
+/**
+ * A row in the bell inbox. Seen rows are read-only; unseen rows (onAck given)
+ * get a gold "unseen" dot and an inline «مشاهده شد». Clicking an unseen row's
+ * body navigates AND acknowledges it.
+ */
+function SeenRow({
+  n,
+  onNavigate,
+  onAck,
+}: {
+  n: Notif;
+  onNavigate?: () => void;
+  onAck?: () => void;
+}) {
   const Icon = TYPE_ICON[n.type];
+  const unseen = !n.read;
   const inner = (
     <div className="flex items-start gap-3 px-4 py-3">
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gold-tint)] text-[var(--gold-ink)]" aria-hidden="true">
+      <span className="relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gold-tint)] text-[var(--gold-ink)]" aria-hidden="true">
         <Icon size={16} />
+        {unseen && (
+          <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[var(--gold-to)] ring-2 ring-[var(--surface)]" />
+        )}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-sm font-medium">{n.title}</span>
+          <span className={`truncate text-sm ${unseen ? "font-bold" : "font-medium"}`}>{n.title}</span>
           <span className="shrink-0 text-[11px] text-faint">{formatRelative(n.createdAt)}</span>
         </div>
         {n.body && <p className="mt-0.5 line-clamp-2 text-xs text-muted">{n.body}</p>}
-        <span className="mt-1 inline-block text-[10px] text-faint">{TYPE_LABEL[n.type]}</span>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-[10px] text-faint">{TYPE_LABEL[n.type]}</span>
+          {unseen && onAck && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAck();
+              }}
+              className="inline-flex items-center gap-1 rounded text-[10px] font-medium text-[var(--gold-ink)] hover:underline"
+            >
+              <Check size={11} aria-hidden="true" /> مشاهده شد
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -223,7 +296,14 @@ function SeenRow({ n, onNavigate }: { n: Notif; onNavigate?: () => void }) {
   return (
     <li>
       {n.href ? (
-        <Link href={n.href} className={cls} onClick={onNavigate}>
+        <Link
+          href={n.href}
+          className={cls}
+          onClick={() => {
+            onAck?.();
+            onNavigate?.();
+          }}
+        >
           {inner}
         </Link>
       ) : (
@@ -238,10 +318,13 @@ function SelectableList({
   items,
   selected,
   setSelected,
+  onOpen,
 }: {
   items: Notif[];
   selected: Set<string>;
   setSelected: (s: Set<string>) => void;
+  /** Opening a notification's link counts as seeing it (acks just that one). */
+  onOpen?: (id: string) => void;
 }) {
   const toggle = (id: string) => {
     const next = new Set(selected);
@@ -268,7 +351,11 @@ function SelectableList({
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 {n.href ? (
-                  <Link href={n.href} className="truncate text-sm font-medium hover:underline">
+                  <Link
+                    href={n.href}
+                    onClick={() => onOpen?.(n.id)}
+                    className="truncate text-sm font-medium hover:underline"
+                  >
                     {n.title}
                   </Link>
                 ) : (
@@ -331,65 +418,65 @@ function BulkBar({
   );
 }
 
+/**
+ * The unseen-notifications menu (checkbox bulk, like the contacts list).
+ * - normal: a panel docked bottom-left with a «بستن».
+ * - blocking (10+ unseen): the same menu, centered over a dim backdrop with no
+ *   close — it stays until the user reviews & clears enough to drop below 10.
+ */
 function ManagePanel({
   items,
   selected,
   setSelected,
   onAck,
+  onOpen,
   onClose,
+  blocking = false,
 }: {
   items: Notif[];
   selected: Set<string>;
   setSelected: (s: Set<string>) => void;
   onAck: (ids?: string[]) => void;
+  onOpen?: (id: string) => void;
   onClose: () => void;
+  blocking?: boolean;
 }) {
-  return (
-    <div className="fixed bottom-4 start-4 z-50 w-[calc(100vw-2rem)] max-w-md overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-lg)]">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h3 className="inline-flex items-center gap-1.5 text-sm font-bold">
+  const panel = (
+    <div
+      className={
+        blocking
+          ? "flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--shadow-lg)]"
+          : "fixed bottom-4 left-4 z-50 flex max-h-[70vh] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-lg)]"
+      }
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-[color:var(--gold-hair)] bg-[var(--gold-tint)] px-4 py-3">
+        <h3 className="inline-flex items-center gap-1.5 text-sm font-bold text-[color:var(--gold-ink)]">
           <ListChecks size={15} aria-hidden="true" /> اعلان‌های دیده‌نشده ({formatNumber(items.length)})
         </h3>
-        <button onClick={onClose} className="text-xs text-muted hover:text-text">
-          بستن
-        </button>
+        {blocking ? (
+          <span className="text-xs text-[color:var(--gold-ink)]/80">برای ادامه، بررسی و تأیید کنید</span>
+        ) : (
+          <button onClick={onClose} className="text-xs text-[color:var(--gold-ink)] hover:underline">
+            بستن
+          </button>
+        )}
       </div>
-      <div className="max-h-[50vh] overflow-y-auto">
-        <SelectableList items={items} selected={selected} setSelected={setSelected} />
+      <div className="flex-1 overflow-y-auto">
+        <SelectableList
+          items={items}
+          selected={selected}
+          setSelected={setSelected}
+          onOpen={onOpen}
+        />
       </div>
       <BulkBar items={items} selected={selected} setSelected={setSelected} onAck={onAck} />
     </div>
   );
-}
 
-function BlockOverlay({
-  items,
-  selected,
-  setSelected,
-  onAck,
-}: {
-  items: Notif[];
-  selected: Set<string>;
-  setSelected: (s: Set<string>) => void;
-  onAck: (ids?: string[]) => void;
-}) {
+  if (!blocking) return panel;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--shadow-lg)]">
-        <div className="flex items-center gap-2 border-b border-border bg-red-600 px-4 py-3 text-white">
-          <AlertTriangle size={18} aria-hidden="true" />
-          <div>
-            <div className="text-sm font-bold">لطفاً اعلان‌های دیده‌نشدهٔ خود را بررسی کنید</div>
-            <div className="text-xs text-white/90">
-              {formatNumber(items.length)} اعلان دیده‌نشده دارید. برای ادامهٔ کار، آن‌ها را تأیید کنید.
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <SelectableList items={items} selected={selected} setSelected={setSelected} />
-        </div>
-        <BulkBar items={items} selected={selected} setSelected={setSelected} onAck={onAck} />
-      </div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[color:var(--gold-ink)]/25 p-4 backdrop-blur-sm">
+      {panel}
     </div>
   );
 }

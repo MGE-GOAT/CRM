@@ -45,6 +45,7 @@ export default async function AttendanceDrilldownPage({
     }),
     prisma.factor.findMany({
       where: {
+        parentFactorId: null,
         creatorId: userId,
         paymentKind: kind,
         paidAt: { gte: start, lt: end },

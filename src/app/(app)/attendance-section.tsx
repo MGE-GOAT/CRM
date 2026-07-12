@@ -54,6 +54,7 @@ export async function AttendanceSection({ month, userId }: Props) {
     }),
     prisma.factor.findMany({
       where: {
+        parentFactorId: null,
         paidAt: { gte: start, lt: end },
         state: { in: ["PAID", "SENDING", "EXIT"] },
       },
