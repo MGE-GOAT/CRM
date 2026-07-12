@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, LogIn } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { TimeField } from "@/components/ui/time-field";
 import { approveMember, dismissJoinRequest } from "@/lib/actions/users";
 
 export type JoinRequest = {
@@ -62,17 +63,13 @@ export function JoinRequests({ requests }: { requests: JoinRequest[] }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1 text-xs text-muted">
-                تا ساعت
-                <input
-                  type="time"
-                  dir="ltr"
-                  value={times[r.id] ?? ""}
-                  onChange={(e) => setTimes((t) => ({ ...t, [r.id]: e.target.value }))}
-                  className="rounded-lg border border-border bg-surface px-2 py-1 text-sm"
-                  aria-label="زمان پایان دسترسی (اختیاری)"
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <span>تا ساعت (۲۴ ساعته)</span>
+                <TimeField
+                  defaultValue="18:00"
+                  onChange={(v) => setTimes((t) => ({ ...t, [r.id]: v }))}
                 />
-              </label>
+              </div>
               <button
                 onClick={() => run(() => approveMember(r.id, times[r.id] || undefined))}
                 disabled={pending}

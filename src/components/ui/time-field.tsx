@@ -18,22 +18,31 @@ const selectClass =
 export function TimeField({
   name,
   defaultValue = "09:00",
+  onChange,
 }: {
-  name: string;
+  /** When provided, a hidden input submits "HH:MM" for form use. */
+  name?: string;
   defaultValue?: string;
+  /** Fired with "HH:MM" on every change (for controlled/non-form use). */
+  onChange?: (value: string) => void;
 }) {
   const [h0, m0] = (defaultValue || "09:00").split(":");
   const [hour, setHour] = useState(HOURS.includes(h0) ? h0 : "09");
   const [minute, setMinute] = useState(MINUTES.includes(m0) ? m0 : "00");
 
+  const emit = (h: string, m: string) => onChange?.(`${h}:${m}`);
+
   return (
     <>
-      <input type="hidden" name={name} value={`${hour}:${minute}`} />
+      {name && <input type="hidden" name={name} value={`${hour}:${minute}`} />}
       <div className="flex items-center gap-1.5" dir="ltr">
         <select
           aria-label="ساعت"
           value={hour}
-          onChange={(e) => setHour(e.target.value)}
+          onChange={(e) => {
+            setHour(e.target.value);
+            emit(e.target.value, minute);
+          }}
           className={selectClass}
         >
           {HOURS.map((h) => (
@@ -46,7 +55,10 @@ export function TimeField({
         <select
           aria-label="دقیقه"
           value={minute}
-          onChange={(e) => setMinute(e.target.value)}
+          onChange={(e) => {
+            setMinute(e.target.value);
+            emit(hour, e.target.value);
+          }}
           className={selectClass}
         >
           {MINUTES.map((m) => (
