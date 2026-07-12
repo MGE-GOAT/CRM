@@ -128,9 +128,10 @@ export function NotificationBell() {
         </div>
       )}
 
-      {/* Escalation banner (5+ unseen). */}
+      {/* Escalation banner (5+ unseen) — sits below the 64px app header so the
+          bell/menu stay clickable. */}
       {showBanner && (
-        <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-center gap-3 bg-red-600 px-4 py-2 text-sm font-medium text-white">
+        <div className="fixed inset-x-0 top-16 z-30 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-red-600 px-4 py-2 text-sm font-medium text-white">
           <AlertTriangle size={16} aria-hidden="true" />
           <span>{formatNumber(activeCount)} اعلان دیده‌نشده دارید. لطفاً بررسی کنید.</span>
           <button
