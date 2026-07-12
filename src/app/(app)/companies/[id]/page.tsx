@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Building2, Globe, Phone, MapPin } from "lucide-react";
+import { ArrowRight, Building2, Globe, Phone, MapPin, Users, FileText, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { requireUser, canManageUsers } from "@/lib/rbac";
 import { Avatar } from "@/components/ui/avatar";
-import { StageBadge, SenfPill } from "@/components/ui/badge";
-import { LogActivity } from "@/components/log-activity";
-import { ActivityTimeline } from "@/components/activity-timeline";
+import { SenfPill } from "@/components/ui/badge";
+import { StateBadge } from "@/components/ui/factor-badge";
 import { safeUrl } from "@/lib/utils";
-import { formatRial, formatNumber, toFa } from "@/lib/format";
+import { formatNumber, formatDate, toFa } from "@/lib/format";
+import { factorPayable } from "@/lib/factor-total";
+import { OWNER_ONLY_STATES, isPreFactor } from "@/lib/factor";
 
 export default async function CompanyDetailPage({
   params,
@@ -15,31 +17,25 @@ export default async function CompanyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const company = await prisma.company.findUnique({
-    where: { id },
-    include: {
-      contacts: { include: { owner: { select: { avatarColor: true } } } },
-      deals: { orderBy: { createdAt: "desc" } },
-      activities: {
-        orderBy: { createdAt: "desc" },
-        include: { user: { select: { name: true, avatarColor: true } } },
+  const user = await requireUser();
+  const isManager = canManageUsers(user.role);
+
+  const [company, factors] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id },
+      include: { contacts: { include: { owner: { select: { avatarColor: true } } } } },
+    }),
+    prisma.factor.findMany({
+      where: {
+        contact: { companyId: id },
+        ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }),
       },
-    },
-  });
+      orderBy: { createdAt: "desc" },
+      include: { items: { select: { quantity: true, unitPrice: true } } },
+    }),
+  ]);
 
   if (!company) notFound();
-
-  const openValue = company.deals
-    .filter((d) => d.status === "OPEN")
-    .reduce((s, d) => s + Number(d.value), 0);
-  const wonValue = company.deals
-    .filter((d) => d.status === "WON")
-    .reduce((s, d) => s + Number(d.value), 0);
-  const summary = [
-    { label: "مخاطبین", value: formatNumber(company.contacts.length) },
-    { label: "معاملات باز", value: formatRial(openValue) },
-    { label: "درآمد موفق", value: formatRial(wonValue) },
-  ];
 
   return (
     <div className="p-4 sm:p-6">
@@ -50,22 +46,8 @@ export default async function CompanyDetailPage({
         <ArrowRight size={16} /> بازگشت به شرکت‌ها
       </Link>
 
-      {/* 360° summary */}
-      <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
-        {summary.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-2xl border border-border bg-surface p-3 text-center shadow-[var(--shadow-md)] sm:p-4"
-          >
-            <div className="text-sm font-bold leading-tight tracking-tight tabular-nums sm:text-xl">
-              {s.value}
-            </div>
-            <div className="mt-1 text-xs text-muted">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left: profile + contacts */}
         <div className="space-y-4">
           <div className="panel p-5">
             <div className="flex items-start gap-3">
@@ -74,7 +56,7 @@ export default async function CompanyDetailPage({
               </span>
               <div className="min-w-0">
                 <h1 className="text-lg font-bold tracking-tight">{company.name}</h1>
-                <p className="text-sm text-muted">{company.industry ?? "—"}</p>
+                {company.industry && <p className="text-sm text-muted">{company.industry}</p>}
               </div>
             </div>
             {company.senf && (
@@ -105,7 +87,7 @@ export default async function CompanyDetailPage({
                 </div>
               )}
               {company.address && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2 [overflow-wrap:anywhere]">
                   <MapPin size={15} className="shrink-0 text-muted" />
                   {company.address}
                 </div>
@@ -113,17 +95,25 @@ export default async function CompanyDetailPage({
             </div>
           </div>
 
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">مخاطبین</h2>
+          <div className="panel overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="inline-flex items-center gap-2 font-bold tracking-tight">
+                <Users size={16} className="text-[color:var(--gold-ink)]" aria-hidden="true" />
+                مخاطبین
+              </h2>
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted">
+                {formatNumber(company.contacts.length)} نفر
+              </span>
+            </div>
             {company.contacts.length === 0 ? (
-              <p className="text-sm text-muted">هنوز مخاطبی ثبت نشده است.</p>
+              <p className="px-5 py-8 text-center text-sm text-muted">هنوز مخاطبی ثبت نشده است.</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="divide-y divide-border">
                 {company.contacts.map((c) => (
                   <li key={c.id}>
                     <Link
                       href={`/contacts/${c.id}`}
-                      className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-[var(--gold-tint)]"
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm hover:bg-[var(--gold-tint)]"
                     >
                       <Avatar
                         name={`${c.firstName} ${c.lastName}`}
@@ -132,8 +122,8 @@ export default async function CompanyDetailPage({
                       />
                       <span>
                         {c.firstName} {c.lastName}
-                        {c.title && (
-                          <span className="block text-xs text-muted">{c.title}</span>
+                        {c.factorName && c.factorName.trim() !== `${c.firstName} ${c.lastName}`.trim() && (
+                          <span className="block text-xs text-muted">{c.factorName}</span>
                         )}
                       </span>
                     </Link>
@@ -142,37 +132,52 @@ export default async function CompanyDetailPage({
               </ul>
             )}
           </div>
+        </div>
 
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">معاملات</h2>
-            {company.deals.length === 0 ? (
-              <p className="text-sm text-muted">هنوز معامله‌ای ثبت نشده است.</p>
+        {/* Right: factors */}
+        <div className="lg:col-span-2">
+          <div className="panel overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="inline-flex items-center gap-2 font-bold tracking-tight">
+                <FileText size={16} className="text-[color:var(--gold-ink)]" aria-hidden="true" />
+                فاکتورها
+              </h2>
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted">
+                {formatNumber(factors.length)} مورد
+              </span>
+            </div>
+            {factors.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-14 text-center text-sm text-muted">
+                <Inbox size={26} className="text-faint" aria-hidden="true" />
+                هنوز فاکتوری برای مخاطبان این شرکت ثبت نشده است.
+              </div>
             ) : (
-              <ul className="space-y-2">
-                {company.deals.map((d) => (
-                  <li
-                    key={d.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm hover:bg-[var(--gold-tint)]"
-                  >
-                    <span className="font-medium">{d.title}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-muted">
-                        {formatRial(Number(d.value))}
+              <ul className="divide-y divide-border">
+                {factors.map((f) => (
+                  <li key={f.id}>
+                    <Link
+                      href={`/factors/${f.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm transition-colors hover:bg-surface-2"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium tabular-nums">
+                          {isPreFactor(f.state) || f.state === "CANCELED" ? "پیش‌فاکتور" : "فاکتور"} #
+                          {toFa(f.number)}
+                        </span>
+                        <span className="text-muted">{f.buyerName}</span>
+                        <StateBadge state={f.state} />
                       </span>
-                      <StageBadge stage={d.stage} />
-                    </span>
+                      <span className="flex items-center gap-3 text-muted">
+                        <span>{formatDate(f.createdAt)}</span>
+                        <span className="font-medium tabular-nums text-text">
+                          {formatNumber(factorPayable(f))} ریال
+                        </span>
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
-        </div>
-
-        <div className="space-y-4 lg:col-span-2">
-          <LogActivity companyId={company.id} />
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">تاریخچه فعالیت‌ها</h2>
-            <ActivityTimeline activities={company.activities} />
           </div>
         </div>
       </div>

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Mail, Phone, Building2, Briefcase } from "lucide-react";
+import { ArrowRight, Phone, Building2, Briefcase, FileText, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { requireUser, canManageUsers } from "@/lib/rbac";
 import { Avatar } from "@/components/ui/avatar";
-import { StageBadge, SenfPill } from "@/components/ui/badge";
-import { LogActivity } from "@/components/log-activity";
-import { ActivityTimeline } from "@/components/activity-timeline";
-import { formatRial, formatNumber, formatDate, toFa } from "@/lib/format";
-import { priorityLabel } from "@/lib/labels";
+import { SenfPill } from "@/components/ui/badge";
+import { StateBadge } from "@/components/ui/factor-badge";
+import { formatNumber, formatDate, toFa } from "@/lib/format";
+import { factorPayable } from "@/lib/factor-total";
+import { OWNER_ONLY_STATES, isPreFactor } from "@/lib/factor";
 import { FactorForm, type FactorInitial, SELLER_DEFAULTS } from "../../factors/factor-form";
 import { createFactor } from "@/lib/actions/factors";
 
@@ -17,40 +18,37 @@ export default async function ContactDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const user = await requireUser();
+  const isManager = canManageUsers(user.role);
+
   const contact = await prisma.contact.findUnique({
     where: { id },
     include: {
       company: true,
       owner: { select: { name: true, avatarColor: true } },
-      deals: { orderBy: { createdAt: "desc" } },
-      tasks: {
-        orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
-        include: { assignee: { select: { name: true, avatarColor: true } } },
-      },
-      reminders: { orderBy: { date: "desc" }, take: 10 },
-      activities: {
+      factors: {
+        // Members only see pre-factor states; managers see everything.
+        where: isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } },
         orderBy: { createdAt: "desc" },
-        include: { user: { select: { name: true, avatarColor: true } } },
+        include: { items: { select: { quantity: true, unitPrice: true } } },
       },
     },
   });
 
   if (!contact) notFound();
 
-  // 360° summary
-  const openDeals = contact.deals.filter((d) => d.status === "OPEN");
-  const wonValue = contact.deals
-    .filter((d) => d.status === "WON")
-    .reduce((s, d) => s + Number(d.value), 0);
-  const openTasks = contact.tasks.filter((t) => !t.completed).length;
-  const summary = [
-    { label: "معاملات باز", value: formatNumber(openDeals.length) },
-    { label: "درآمد موفق", value: formatRial(wonValue) },
-    { label: "وظایف باز", value: formatNumber(openTasks) },
-  ];
+  const fullName = `${contact.firstName} ${contact.lastName}`.trim();
+  const factorName = contact.factorName?.trim();
+
+  const idFields = [
+    ["شناسه/کد ملی", contact.nationalId],
+    ["شماره اقتصادی", contact.economicCode],
+    ["کد پستی", contact.postalCode],
+    ["شماره ثبت", contact.registrationNumber],
+  ].filter(([, v]) => v);
 
   const factorInitial: FactorInitial = {
-    buyerName: contact.factorName?.trim() || `${contact.firstName} ${contact.lastName}`.trim(),
+    buyerName: factorName || fullName,
     buyerPhone: contact.phone ?? "",
     buyerAddress: contact.notes ?? "",
     buyerEconomicCode: contact.economicCode ?? "",
@@ -78,43 +76,19 @@ export default async function ContactDetailPage({
         <FactorForm action={createFactor} initial={factorInitial} />
       </div>
 
-      {/* 360° summary */}
-      <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
-        {summary.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-2xl border border-border bg-surface p-4 text-center shadow-[var(--shadow-sm)]"
-          >
-            <div className="text-lg font-bold tracking-tight tabular-nums sm:text-2xl">
-              {s.value}
-            </div>
-            <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
-              <span
-                className="h-1.5 w-1.5 rounded-full bg-[var(--gold-mid)]"
-                aria-hidden="true"
-              />
-              {s.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: profile */}
+        {/* Left: profile + company */}
         <div className="space-y-4">
           <div className="panel p-5">
             <div className="flex items-start gap-4">
-              <Avatar
-                name={`${contact.firstName} ${contact.lastName}`}
-                color={contact.owner.avatarColor}
-                size={56}
-              />
+              <Avatar name={fullName} color={contact.owner.avatarColor} size={56} />
               <div className="min-w-0">
-                <h1 className="text-lg font-bold tracking-tight">
-                  {contact.firstName} {contact.lastName}
-                </h1>
-                {contact.title && (
-                  <p className="mt-0.5 text-sm text-muted">{contact.title}</p>
+                <h1 className="text-lg font-bold tracking-tight">{fullName}</h1>
+                {factorName && factorName !== fullName && (
+                  <p className="mt-0.5 text-sm">
+                    <span className="text-muted">نام روی فاکتور: </span>
+                    <span className="font-medium">{factorName}</span>
+                  </p>
                 )}
                 {contact.senf && (
                   <div className="mt-2">
@@ -125,18 +99,6 @@ export default async function ContactDetailPage({
             </div>
 
             <div className="mt-5 space-y-3 border-t border-border pt-4 text-sm">
-              {contact.email && (
-                <div className="flex items-center gap-2">
-                  <Mail size={15} className="shrink-0 text-faint" aria-hidden="true" />
-                  <a
-                    dir="ltr"
-                    href={`mailto:${contact.email}`}
-                    className="truncate transition-colors hover:text-[var(--brand)]"
-                  >
-                    {contact.email}
-                  </a>
-                </div>
-              )}
               {contact.phone && (
                 <div className="flex items-center gap-2">
                   <Phone size={15} className="shrink-0 text-faint" aria-hidden="true" />
@@ -148,7 +110,7 @@ export default async function ContactDetailPage({
                   <Building2 size={15} className="shrink-0 text-faint" aria-hidden="true" />
                   <Link
                     href={`/companies/${contact.company.id}`}
-                    className="truncate transition-colors hover:text-[var(--brand)]"
+                    className="truncate font-medium transition-colors hover:text-[var(--brand)]"
                   >
                     {contact.company.name}
                   </Link>
@@ -162,6 +124,19 @@ export default async function ContactDetailPage({
               </div>
             </div>
 
+            {idFields.length > 0 && (
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border pt-4 text-xs">
+                {idFields.map(([k, v]) => (
+                  <div key={k} className="flex flex-col">
+                    <dt className="text-faint">{k}</dt>
+                    <dd className="tabular-nums" dir="ltr" style={{ textAlign: "right" }}>
+                      {toFa(String(v))}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
             {contact.notes && (
               <div className="mt-4 rounded-e-lg border-s-2 border-[color:var(--gold-hair)] bg-surface-2 p-3 text-sm text-muted [overflow-wrap:anywhere]">
                 <span className="mb-1 block text-xs font-medium text-faint">آدرس</span>
@@ -169,86 +144,52 @@ export default async function ContactDetailPage({
               </div>
             )}
           </div>
-
-          {/* Related deals */}
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">معاملات</h2>
-            {contact.deals.length === 0 ? (
-              <p className="text-sm text-muted">هنوز معامله‌ای ثبت نشده است.</p>
-            ) : (
-              <ul className="space-y-2">
-                {contact.deals.map((d) => (
-                  <li
-                    key={d.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
-                  >
-                    <span className="min-w-0 truncate font-medium">{d.title}</span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <span className="text-muted">
-                        {formatRial(Number(d.value))}
-                      </span>
-                      <StageBadge stage={d.stage} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Tasks */}
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">وظایف</h2>
-            {contact.tasks.length === 0 ? (
-              <p className="text-sm text-muted">وظیفه‌ای ثبت نشده است.</p>
-            ) : (
-              <ul className="space-y-2">
-                {contact.tasks.map((t) => (
-                  <li
-                    key={t.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
-                  >
-                    <span className={t.completed ? "text-muted line-through" : "font-medium"}>
-                      {t.title}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2 text-xs text-muted">
-                      {t.dueDate && <span>{formatDate(t.dueDate)}</span>}
-                      <span>{priorityLabel[t.priority]}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Reminders */}
-          <div className="panel p-5">
-            <h2 className="mb-3 font-bold tracking-tight">یادآوری‌ها</h2>
-            {contact.reminders.length === 0 ? (
-              <p className="text-sm text-muted">یادآوری‌ای ثبت نشده است.</p>
-            ) : (
-              <ul className="space-y-2">
-                {contact.reminders.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
-                  >
-                    <span className={r.done ? "text-muted line-through" : "font-medium"}>
-                      {r.title}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted">{formatDate(r.date)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
 
-        {/* Right: activity */}
-        <div className="space-y-4 lg:col-span-2">
-          <LogActivity contactId={contact.id} />
-          <div className="panel p-5">
-            <h2 className="mb-4 font-bold tracking-tight">تاریخچه فعالیت‌ها</h2>
-            <ActivityTimeline activities={contact.activities} />
+        {/* Right: factors */}
+        <div className="lg:col-span-2">
+          <div className="panel overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="inline-flex items-center gap-2 font-bold tracking-tight">
+                <FileText size={16} className="text-[color:var(--gold-ink)]" aria-hidden="true" />
+                فاکتورها
+              </h2>
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-muted">
+                {formatNumber(contact.factors.length)} مورد
+              </span>
+            </div>
+
+            {contact.factors.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-4 py-14 text-center text-sm text-muted">
+                <Inbox size={26} className="text-faint" aria-hidden="true" />
+                هنوز فاکتوری برای این مخاطب ثبت نشده است.
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {contact.factors.map((f) => (
+                  <li key={f.id}>
+                    <Link
+                      href={`/factors/${f.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm transition-colors hover:bg-surface-2"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium tabular-nums">
+                          {isPreFactor(f.state) || f.state === "CANCELED" ? "پیش‌فاکتور" : "فاکتور"} #
+                          {toFa(f.number)}
+                        </span>
+                        <StateBadge state={f.state} />
+                      </span>
+                      <span className="flex items-center gap-3 text-muted">
+                        <span>{formatDate(f.createdAt)}</span>
+                        <span className="font-medium tabular-nums text-text">
+                          {formatNumber(factorPayable(f))} ریال
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
