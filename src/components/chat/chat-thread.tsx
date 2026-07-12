@@ -133,6 +133,7 @@ export function ChatThread({
   const inputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -140,7 +141,10 @@ export function ChatThread({
   const lastId = messages.at(-1)?.id ?? "none";
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll ONLY the message list — not scrollIntoView, which also scrolls
+    // ancestor containers/the page and would drag the channel header out of view.
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [lastId]);
 
   // Stop any in-flight recording/timer if the thread unmounts.
@@ -239,6 +243,7 @@ export function ChatThread({
     <div className="flex h-full flex-col">
       {/* Messages */}
       <div
+        ref={listRef}
         className="flex-1 space-y-1 overflow-y-auto bg-bg p-4"
         role="log"
         aria-live="polite"
