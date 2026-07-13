@@ -8,7 +8,10 @@ import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { ChatThread, type ChatMsg } from "@/components/chat/chat-thread";
 import { GroupManage, type MemberInfo } from "@/components/chat/group-manage";
 import { markChannelRead } from "@/lib/actions/chat";
+import { chatMessageInclude, toChatMsg } from "@/lib/chat-message";
 import { formatNumber } from "@/lib/format";
+
+const INITIAL_WINDOW = 200;
 
 export default async function ChannelPage({
   params,
@@ -31,18 +34,12 @@ export default async function ChannelPage({
         orderBy: { joinedAt: "asc" },
       },
       messages: {
-        // Newest 200, still in chronological order: a negative take returns the
-        // LAST N rows of the ordering — so channels past 200 messages keep
-        // showing new messages instead of freezing on the oldest 200.
-        orderBy: { createdAt: "asc" },
-        take: -200,
-        include: {
-          sender: { select: { id: true, name: true, avatarColor: true } },
-          replyTo: { include: { sender: { select: { name: true } } } },
-          attachments: {
-            select: { id: true, fileName: true, mimeType: true, size: true },
-          },
-        },
+        // Newest window, still in chronological order: a negative take returns
+        // the LAST N rows of the ordering — so channels past the window keep
+        // showing new messages. Older ones load on scroll-up (loadOlderMessages).
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: -INITIAL_WINDOW,
+        include: chatMessageInclude,
       },
     },
   });
@@ -65,27 +62,9 @@ export default async function ChannelPage({
   );
   const canDeleteGroup = canManageGroup && myRank >= maxMemberRank;
 
-  const messages: ChatMsg[] = channel.messages.map((m) => ({
-    id: m.id,
-    body: m.body,
-    createdAt: m.createdAt.toISOString(),
-    editedAt: m.editedAt ? m.editedAt.toISOString() : null,
-    deleted: m.deletedAt !== null,
-    kind: m.kind,
-    acked: m.ackedAt !== null,
-    factorId: m.factorId,
-    senderId: m.senderId,
-    senderName: m.sender.name,
-    senderColor: m.sender.avatarColor,
-    replyToName: m.replyTo?.sender.name ?? null,
-    replyToBody: m.replyTo?.body ?? null,
-    attachments: m.attachments.map((a) => ({
-      id: a.id,
-      fileName: a.fileName,
-      mimeType: a.mimeType,
-      size: a.size,
-    })),
-  }));
+  const messages: ChatMsg[] = channel.messages.map(toChatMsg);
+  // A full window means there are likely older messages to scroll back to.
+  const hasOlder = channel.messages.length >= INITIAL_WINDOW;
 
   const members: MemberInfo[] = channel.members.map((m) => ({
     id: m.user.id,
@@ -164,6 +143,7 @@ export default async function ChannelPage({
         currentUserId={user.id}
         canModerate={canModerate}
         messages={messages}
+        hasOlder={hasOlder}
       />
     </div>
   );

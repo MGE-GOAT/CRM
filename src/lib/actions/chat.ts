@@ -7,6 +7,10 @@ import { requireUser, canManageUsers, roleRank, systemOwnerId } from "@/lib/rbac
 import { formError, type FormResult } from "@/lib/form-result";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { saveUpload, deleteUpload } from "@/lib/storage";
+import { chatMessageInclude, toChatMsg } from "@/lib/chat-message";
+import type { ChatMsg } from "@/components/chat/chat-thread";
+
+const OLDER_PAGE_SIZE = 50;
 
 const MAX_FILES_PER_MESSAGE = 6;
 
@@ -69,6 +73,35 @@ async function notifyChannelMembers(
     });
   } catch (err) {
     console.error("notifyChannelMembers failed", err);
+  }
+}
+
+/**
+ * Load a page of messages OLDER than `beforeId` (for infinite scroll-up).
+ * Cursor-based, so it walks back to the very first message with no limit on how
+ * far. Returns ascending (oldest→newest) and whether more remain.
+ */
+export async function loadOlderMessages(
+  channelId: string,
+  beforeId: string,
+): Promise<{ messages: ChatMsg[]; hasMore: boolean } | { error: string }> {
+  const user = await requireUser();
+  try {
+    await assertMember(channelId, user.id);
+    const older = await prisma.message.findMany({
+      where: { channelId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      cursor: { id: beforeId },
+      skip: 1, // exclude the cursor message itself
+      take: OLDER_PAGE_SIZE,
+      include: chatMessageInclude,
+    });
+    return {
+      messages: older.reverse().map(toChatMsg),
+      hasMore: older.length === OLDER_PAGE_SIZE,
+    };
+  } catch (e) {
+    return { error: formError(e).error ?? "خطا در بارگذاری پیام‌ها" };
   }
 }
 

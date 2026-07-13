@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useTransition } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
@@ -19,9 +19,23 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
-import { sendMessage, editMessage, deleteMessage, acknowledgeTaskMessage } from "@/lib/actions/chat";
+import {
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  acknowledgeTaskMessage,
+  loadOlderMessages,
+} from "@/lib/actions/chat";
 import { formatTime, formatDayLabel, dayKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+// useLayoutEffect on the client, useEffect on the server (avoids the SSR warning).
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// Deterministic order — createdAt alone is not unique, so ties are broken by id
+// (must match the server's compound orderBy used for the window + pagination).
+const byTime = (a: { createdAt: string; id: string }, b: { createdAt: string; id: string }) =>
+  a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 
 export type ChatAttachment = {
   id: string;
@@ -115,13 +129,23 @@ export function ChatThread({
   currentUserId,
   canModerate,
   messages,
+  hasOlder = false,
 }: {
   channelId: string;
   currentUserId: string;
   canModerate: boolean;
   messages: ChatMsg[];
+  hasOlder?: boolean;
 }) {
   const router = useRouter();
+  // The full ordered thread, accumulated MONOTONICALLY: both the periodic
+  // server-window refresh (newest N) and scroll-up loads are merged in and never
+  // dropped — so a sliding window can't create gaps in what the user sees.
+  const [history, setHistory] = useState<ChatMsg[]>(() => [...messages].sort(byTime));
+  const [hasMore, setHasMore] = useState(hasOlder);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const restoreRef = useRef<{ height: number; top: number } | null>(null);
+  const nearBottomRef = useRef(true);
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
   const [editing, setEditing] = useState<ChatMsg | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -138,14 +162,82 @@ export function ChatThread({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancelledRef = useRef(false);
-  const lastId = messages.at(-1)?.id ?? "none";
+  const lastId = history.at(-1)?.id ?? "none";
+
+  // Merge each server-window refresh (new + edited/deleted messages) into the
+  // accumulated history. Prop objects win (so edits/deletes reflect), and no
+  // already-loaded message is ever removed.
+  useEffect(() => {
+    setHistory((prev) => {
+      const map = new Map(prev.map((m) => [m.id, m]));
+      let changed = false;
+      for (const m of messages) {
+        const ex = map.get(m.id);
+        if (
+          !ex ||
+          ex.editedAt !== m.editedAt ||
+          ex.deleted !== m.deleted ||
+          ex.body !== m.body ||
+          ex.acked !== m.acked
+        ) {
+          map.set(m.id, m);
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      return [...map.values()].sort(byTime);
+    });
+  }, [messages]);
 
   useEffect(() => {
     // Scroll ONLY the message list — not scrollIntoView, which also scrolls
     // ancestor containers/the page and would drag the channel header out of view.
+    // Skip when the user has scrolled up to read history, so new messages don't
+    // yank them back to the bottom.
     const el = listRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (el && nearBottomRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [lastId]);
+
+  // After prepending older messages, restore the scroll position so the view
+  // stays anchored on what the user was reading (no jump). Guarded by restoreRef
+  // so it only fires for a scroll-up prepend, not for appends at the bottom.
+  useIsoLayoutEffect(() => {
+    const el = listRef.current;
+    const r = restoreRef.current;
+    if (el && r) {
+      el.scrollTop = el.scrollHeight - r.height + r.top;
+      restoreRef.current = null;
+    }
+  }, [history.length]);
+
+  const loadOlder = useCallback(async () => {
+    const el = listRef.current;
+    const cursorId = history[0]?.id;
+    if (!el || !cursorId || loadingOlder || !hasMore) return;
+    setLoadingOlder(true);
+    restoreRef.current = { height: el.scrollHeight, top: el.scrollTop };
+    const res = await loadOlderMessages(channelId, cursorId);
+    if ("error" in res) {
+      setSendError(res.error);
+      restoreRef.current = null;
+    } else {
+      setHasMore(res.hasMore);
+      setHistory((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        const fresh = res.messages.filter((m) => !seen.has(m.id));
+        if (fresh.length === 0) return prev;
+        return [...fresh, ...prev]; // fresh are strictly older → already ordered
+      });
+    }
+    setLoadingOlder(false);
+  }, [channelId, history, loadingOlder, hasMore]);
+
+  const onListScroll = () => {
+    const el = listRef.current;
+    if (!el) return;
+    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (el.scrollTop < 120 && hasMore && !loadingOlder) loadOlder();
+  };
 
   // Stop any in-flight recording/timer if the thread unmounts.
   useEffect(() => {
@@ -244,18 +336,25 @@ export function ChatThread({
       {/* Messages */}
       <div
         ref={listRef}
+        onScroll={onListScroll}
         className="flex-1 space-y-1 overflow-y-auto bg-bg p-4"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
       >
-        {messages.length === 0 && (
+        {loadingOlder && (
+          <p className="py-2 text-center text-xs text-muted">در حال بارگذاری پیام‌های قبلی…</p>
+        )}
+        {!hasMore && history.length > 0 && (
+          <p className="py-2 text-center text-xs text-faint">— ابتدای گفتگو —</p>
+        )}
+        {history.length === 0 && (
           <p className="py-10 text-center text-sm text-muted">
             هنوز پیامی نیست. سلام کنید 👋
           </p>
         )}
-        {messages.map((m, i) => {
-          const prev = messages[i - 1];
+        {history.map((m, i) => {
+          const prev = history[i - 1];
           const newDay = !prev || dayKey(prev.createdAt) !== dayKey(m.createdAt);
           const grouped =
             !newDay &&
