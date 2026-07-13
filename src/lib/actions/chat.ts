@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageUsers, roleRank, systemOwnerId } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { saveUpload } from "@/lib/storage";
+import { saveUpload, deleteUpload } from "@/lib/storage";
 
 const MAX_FILES_PER_MESSAGE = 6;
 
@@ -187,8 +187,14 @@ export async function deleteMessage(messageId: string): Promise<FormResult> {
       where: { id: messageId },
       data: { deletedAt: new Date(), body: null, editedAt: null },
     });
-    // Detach attachments so deleted messages carry nothing.
+    // Detach attachments so deleted messages carry nothing — and reclaim the
+    // bytes from disk (deleting only the DB rows would orphan the files).
+    const attachments = await prisma.attachment.findMany({
+      where: { messageId },
+      select: { storageKey: true },
+    });
     await prisma.attachment.deleteMany({ where: { messageId } });
+    await Promise.all(attachments.map((a) => deleteUpload(a.storageKey)));
     revalidatePath(`/chat/${msg.channelId}`);
   } catch (e) {
     return formError(e);

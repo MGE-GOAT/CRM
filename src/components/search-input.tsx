@@ -2,15 +2,22 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function SearchInput({ placeholder = "Search…" }: { placeholder?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [value, setValue] = useState(params.get("q") ?? "");
+  // Skip the mount run: `value` is seeded from the URL, so firing on mount would
+  // rewrite the URL and wipe the `page` param even when nothing was typed.
+  const mounted = useRef(false);
 
   useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     const t = setTimeout(() => {
       const sp = new URLSearchParams(params.toString());
       if (value) sp.set("q", value);

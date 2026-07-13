@@ -60,7 +60,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const emailKey = email.toLowerCase();
           if (
             !checkRateLimit(`login:ip:${ip}`, 30, 60 * 1000).allowed ||
-            !checkRateLimit(`login:${ip}:${emailKey}`, 10, 60 * 1000).allowed
+            !checkRateLimit(`login:${ip}:${emailKey}`, 10, 60 * 1000).allowed ||
+            // Cross-IP per-account cap: the raw NextAuth callback skips the login
+            // form's CAPTCHA, so IP rotation would otherwise dodge throttling.
+            // This bounds total attempts against one account regardless of IP.
+            !checkRateLimit(`login:email:${emailKey}`, 30, 10 * 60 * 1000).allowed
           ) {
             return null;
           }

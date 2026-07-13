@@ -70,8 +70,8 @@ export function CompaniesBulkList({
               <th className="px-4 py-3 font-medium">نام</th>
               <th className="hidden px-4 py-3 font-medium lg:table-cell">صنف</th>
               <th className="hidden px-4 py-3 font-medium md:table-cell">دامنه</th>
-              <th className="hidden px-4 py-3 text-center font-medium sm:table-cell">مخاطبین</th>
-              <th className="hidden px-4 py-3 text-center font-medium sm:table-cell">معاملات</th>
+              <th className="hidden px-4 py-3 text-center font-medium lg:table-cell">مخاطبین</th>
+              <th className="hidden px-4 py-3 text-center font-medium lg:table-cell">معاملات</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -130,10 +130,10 @@ export function CompaniesBulkList({
                   <td className="hidden px-4 py-3 text-muted md:table-cell" dir="ltr">
                     {c.domain ?? "—"}
                   </td>
-                  <td className="hidden px-4 py-3 text-center text-muted sm:table-cell">
+                  <td className="hidden px-4 py-3 text-center text-muted lg:table-cell">
                     {formatNumber(c.contactCount)}
                   </td>
-                  <td className="hidden px-4 py-3 text-center text-muted sm:table-cell">
+                  <td className="hidden px-4 py-3 text-center text-muted lg:table-cell">
                     {formatNumber(c.dealCount)}
                   </td>
                   <td className="px-4 py-3">

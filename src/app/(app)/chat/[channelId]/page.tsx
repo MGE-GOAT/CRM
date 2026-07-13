@@ -31,8 +31,11 @@ export default async function ChannelPage({
         orderBy: { joinedAt: "asc" },
       },
       messages: {
+        // Newest 200, still in chronological order: a negative take returns the
+        // LAST N rows of the ordering — so channels past 200 messages keep
+        // showing new messages instead of freezing on the oldest 200.
         orderBy: { createdAt: "asc" },
-        take: 200,
+        take: -200,
         include: {
           sender: { select: { id: true, name: true, avatarColor: true } },
           replyTo: { include: { sender: { select: { name: true } } } },

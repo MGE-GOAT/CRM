@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile, stat } from "node:fs/promises";
+import { mkdir, writeFile, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 /**
@@ -61,6 +61,17 @@ export async function saveUpload(file: File): Promise<SavedUpload> {
  * Resolve a storage key to an absolute path, guarding against path traversal.
  * Returns null if the key escapes the uploads dir or the file is missing.
  */
+/** Delete an uploaded file from disk (best-effort; safe if already gone). */
+export async function deleteUpload(storageKey: string): Promise<void> {
+  const resolved = await resolveUploadPath(storageKey);
+  if (!resolved) return;
+  try {
+    await unlink(resolved);
+  } catch {
+    /* already removed — nothing to do */
+  }
+}
+
 export async function resolveUploadPath(storageKey: string): Promise<string | null> {
   const resolved = path.resolve(UPLOADS_DIR, storageKey);
   const base = path.resolve(UPLOADS_DIR);

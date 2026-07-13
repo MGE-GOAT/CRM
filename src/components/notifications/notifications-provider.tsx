@@ -66,12 +66,25 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [sectionCounts, setSectionCounts] = useState<Record<string, number>>({});
   const pathname = usePathname();
 
+  // Snapshot of the latest committed `active` for event handlers (avoids nesting
+  // setState calls inside another updater).
+  const activeRef = useRef<Notif[]>([]);
+  activeRef.current = active;
+  // Ordering guard: drop stale/out-of-order poll responses, and let a local
+  // mutation (ack / view) invalidate polls that were already in flight before it
+  // — otherwise a slow pre-mutation GET could resurrect just-cleared state.
+  const reqSeq = useRef(0);
+  const appliedSeq = useRef(0);
+
   const poll = useCallback(async () => {
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    const seq = ++reqSeq.current;
     try {
       const res = await fetch("/api/notifications", { cache: "no-store" });
       if (!res.ok) return;
       const data: FeedResponse = await res.json();
+      if (seq <= appliedSeq.current) return; // a newer poll/mutation already won
+      appliedSeq.current = seq;
       setActive(data.active);
       setArchived(data.archived);
       setActiveCount(data.activeCount ?? data.active.length);
@@ -99,6 +112,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const key = navKeyFor(pathname);
     if (!key || lastViewed.current === key) return;
     lastViewed.current = key;
+    appliedSeq.current = ++reqSeq.current; // invalidate polls started before this
     // Optimistically clear; server reconciles on the next poll.
     setSectionCounts((prev) => (prev[key] ? { ...prev, [key]: 0 } : prev));
     fetch("/api/notifications", {
@@ -106,22 +120,21 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ view: pathname }),
     }).catch(() => {
-      /* best-effort; next poll reconciles */
+      // Failed — allow a retry on the next render for this same section.
+      if (lastViewed.current === key) lastViewed.current = null;
     });
   }, [pathname]);
 
   const acknowledge = useCallback(async (ids?: string[]) => {
-    setActive((prev) => {
-      const acked = ids ? prev.filter((n) => ids.includes(n.id)) : prev;
-      const remaining = ids ? prev.filter((n) => !ids.includes(n.id)) : [];
-      // Keep the exact count in step optimistically: acking specific ids drops
-      // by that many; acking all zeroes it (even beyond the 50-row window).
-      setActiveCount((c) => (ids ? Math.max(0, c - acked.length) : 0));
-      setArchived((a) =>
-        [...acked.map((n) => ({ ...n, read: true })), ...a].slice(0, ARCHIVE_MAX),
-      );
-      return remaining;
-    });
+    // Compute from the latest committed snapshot, then apply three *separate*
+    // pure updates — never nest setState inside another updater (StrictMode /
+    // concurrent rendering would double-apply the nested ones).
+    const prev = activeRef.current;
+    const acked = ids ? prev.filter((n) => ids.includes(n.id)) : prev;
+    appliedSeq.current = ++reqSeq.current; // invalidate in-flight polls
+    setActive(ids ? prev.filter((n) => !ids.includes(n.id)) : []);
+    setActiveCount((c) => (ids ? Math.max(0, c - acked.length) : 0));
+    setArchived((a) => [...acked.map((n) => ({ ...n, read: true })), ...a].slice(0, ARCHIVE_MAX));
     try {
       await fetch("/api/notifications", {
         method: "POST",

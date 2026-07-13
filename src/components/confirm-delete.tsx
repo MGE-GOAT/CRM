@@ -57,7 +57,7 @@ export function ConfirmDelete({
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="inline-flex min-h-6 min-w-6 items-center gap-1 rounded-lg px-2 py-1 text-sm text-muted hover:bg-red-50 hover:text-red-600"
+      className="inline-flex min-h-9 items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-muted hover:bg-red-50 hover:text-red-600"
       aria-label={label}
       title={label}
     >

@@ -325,16 +325,20 @@ export async function reopenFactor(id: string): Promise<FormResult> {
   try {
     const factor = await prisma.factor.findUniqueOrThrow({
       where: { id },
-      select: { state: true, creatorId: true },
+      select: { state: true, creatorId: true, confirmedAt: true },
     });
     if (factor.creatorId !== user.id && !isOwner(user.role)) {
       throw new Error("اجازهٔ بازگردانی این پیش‌فاکتور را ندارید.");
     }
     if (factor.state !== "CANCELED") throw new Error("این پیش‌فاکتور لغو نشده است.");
 
+    // Restore to the pre-cancel state: a factor that was never owner-confirmed
+    // goes back to INITIAL (still needs owner approval), not FOLLOWING_UP —
+    // otherwise cancel→reopen would silently skip the owner's confirmation.
+    const restoreState = factor.confirmedAt ? "FOLLOWING_UP" : "INITIAL";
     const moved = await prisma.factor.updateMany({
       where: { id, state: "CANCELED" },
-      data: { state: "FOLLOWING_UP", canceledAt: null },
+      data: { state: restoreState, canceledAt: null },
     });
     if (moved.count === 0) throw new Error("این پیش‌فاکتور قابل بازگردانی نیست.");
 
@@ -368,14 +372,19 @@ export async function sendFactor(id: string, sources: SourceKind[]): Promise<For
 
     // Conditional transition so two concurrent sends can't both add sources /
     // double-fire: only the write that still sees PAID wins.
-    const moved = await prisma.factor.updateMany({
-      where: { id, state: "PAID" },
-      data: { state: "SENDING", sentAt: new Date() },
-    });
-    if (moved.count === 0) throw new Error("این فاکتور قبلاً ارسال شده است.");
-    await prisma.factorSourceEntry.createMany({
-      data: unique.map((source) => ({ factorId: id, source })),
-      skipDuplicates: true,
+    // Atomic: move to SENDING and create the source entries together, so a
+    // failure can't leave the factor stuck in SENDING with zero sources (which
+    // could never be checked out to EXIT).
+    await prisma.$transaction(async (tx) => {
+      const moved = await tx.factor.updateMany({
+        where: { id, state: "PAID" },
+        data: { state: "SENDING", sentAt: new Date() },
+      });
+      if (moved.count === 0) throw new Error("این فاکتور قبلاً ارسال شده است.");
+      await tx.factorSourceEntry.createMany({
+        data: unique.map((source) => ({ factorId: id, source })),
+        skipDuplicates: true,
+      });
     });
 
     revalidatePath("/factors");

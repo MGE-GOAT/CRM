@@ -337,7 +337,9 @@ export function ChatThread({
                       </div>
 
                       {/* hover actions */}
-                      <div className="mt-1 flex shrink-0 gap-0.5 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                      {/* Actions: always visible on touch (no hover pointer);
+                          on mouse devices, reveal on hover/focus only. */}
+                      <div className="mt-1 flex shrink-0 gap-0.5 opacity-100 transition [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
                         <button
                           onClick={() => {
                             setReplyTo(m);
@@ -345,18 +347,18 @@ export function ChatThread({
                           }}
                           aria-label="پاسخ"
                           title="پاسخ"
-                          className="rounded p-1 text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
+                          className="grid h-9 w-9 place-items-center rounded text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
                         >
-                          <Reply size={14} aria-hidden="true" />
+                          <Reply size={16} aria-hidden="true" />
                         </button>
                         {canEdit && (
                           <button
                             onClick={() => setEditing(m)}
                             aria-label="ویرایش"
                             title="ویرایش"
-                            className="rounded p-1 text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
+                            className="grid h-9 w-9 place-items-center rounded text-muted hover:bg-[var(--gold-tint)] hover:text-[color:var(--gold-ink)]"
                           >
-                            <Pencil size={14} aria-hidden="true" />
+                            <Pencil size={16} aria-hidden="true" />
                           </button>
                         )}
                         {canDelete && (
@@ -364,9 +366,9 @@ export function ChatThread({
                             onClick={() => handleDelete(m)}
                             aria-label="حذف"
                             title="حذف"
-                            className="rounded p-1 text-muted hover:bg-red-50 hover:text-red-600"
+                            className="grid h-9 w-9 place-items-center rounded text-muted hover:bg-red-50 hover:text-red-600"
                           >
-                            <Trash2 size={14} aria-hidden="true" />
+                            <Trash2 size={16} aria-hidden="true" />
                           </button>
                         )}
                       </div>
@@ -507,7 +509,7 @@ export function ChatThread({
             autoComplete="off"
             aria-label="متن پیام"
             placeholder="پیام خود را بنویسید…"
-            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/50"
+            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/50"
           />
           <SendButton />
         </form>

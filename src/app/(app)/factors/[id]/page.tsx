@@ -294,7 +294,7 @@ export default async function FactorDetailPage({
                         {formatNumber(Number(it.unitPrice))}
                       </td>
                       <td className="border-b border-border px-3 py-2.5 text-center font-medium tabular-nums">
-                        {formatNumber(Number(it.quantity) * Number(it.unitPrice))}
+                        {formatNumber(Math.round(Number(it.quantity) * Number(it.unitPrice)))}
                       </td>
                       <td className="border-b border-border px-3 py-2.5 text-muted">
                         {it.description ?? "—"}

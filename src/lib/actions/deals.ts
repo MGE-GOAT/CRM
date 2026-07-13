@@ -12,7 +12,9 @@ const STAGES = ["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"] a
 
 const schema = z.object({
   title: z.string().min(1, "عنوان الزامی است").max(300),
-  value: z.coerce.number().min(0).max(1e15).default(0),
+  // Cap aligns with the DB column Decimal(14,2) (max 999,999,999,999.99) so a
+  // schema-valid value can't crash on insert with a generic DB error.
+  value: z.coerce.number().min(0).max(999_999_999_999).default(0),
   stage: z.enum(STAGES),
   probability: z.coerce.number().min(0).max(100).default(10),
   companyId: z.string().optional(),
@@ -43,13 +45,16 @@ export async function createDeal(formData: FormData): Promise<FormResult> {
       source: formData.get("source") || undefined,
     });
     const status = statusForStage(d.stage);
+    // Normalize probability to the stage — WON is certain, LOST is dead — to
+    // match updateDeal / moveDealStage (which both enforce this).
+    const probability = d.stage === "WON" ? 100 : d.stage === "LOST" ? 0 : d.probability;
     await prisma.deal.create({
       data: {
         title: d.title,
         value: d.value,
         stage: d.stage as DealStage,
         status,
-        probability: d.probability,
+        probability,
         companyId: d.companyId || null,
         contactId: d.contactId || null,
         expectedCloseDate: d.expectedCloseDate ? new Date(d.expectedCloseDate) : null,

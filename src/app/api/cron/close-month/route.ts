@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { recentMonths } from "@/lib/attendance-report";
-import { closeMonth } from "@/lib/monthly-backup";
+import { closeMonth, sweepFinishedInClosedMonths } from "@/lib/monthly-backup";
 
 export const dynamic = "force-dynamic";
 
@@ -28,5 +28,7 @@ export async function POST(req: NextRequest) {
   // itself guards against the current month and against double-closing.
   const previous = recentMonths(2)[1];
   const result = await closeMonth(previous);
-  return NextResponse.json(result);
+  // Reclaim any factors that finished AFTER their month was already archived.
+  const sweptLeftovers = await sweepFinishedInClosedMonths();
+  return NextResponse.json({ ...result, sweptLeftovers });
 }

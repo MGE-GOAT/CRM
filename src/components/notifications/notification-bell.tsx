@@ -112,7 +112,7 @@ export function NotificationBell() {
         {bellOpen && (
           <div
             role="menu"
-            className="absolute end-0 z-30 mt-2 w-80 animate-in overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-lg)]"
+            className="absolute end-0 z-30 mt-2 w-80 max-w-[calc(100vw-1rem)] animate-in overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-lg)]"
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <span className="text-sm font-semibold">اعلان‌ها</span>
@@ -150,7 +150,7 @@ export function NotificationBell() {
 
       {/* Persistent stack of unseen notifs (bottom-left, clear of the sidebar). */}
       {!showBlock && activeCount > 0 && !manageOpen && (
-        <div className="pointer-events-none fixed bottom-4 left-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2">
+        <div className="pointer-events-none fixed bottom-20 left-4 z-40 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2">
           {active.slice(0, STACK_VISIBLE).map((n) => (
             <ActiveCard key={n.id} n={n} onAck={() => ack([n.id])} />
           ))}

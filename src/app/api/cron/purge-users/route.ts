@@ -59,6 +59,10 @@ export async function POST(req: NextRequest) {
         prisma.contact.updateMany({ where: { ownerId: u.id }, data: { ownerId: admin.id } }),
         prisma.deal.updateMany({ where: { ownerId: u.id }, data: { ownerId: admin.id } }),
         prisma.activity.updateMany({ where: { userId: u.id }, data: { userId: admin.id } }),
+        // Factor.creatorId is ON DELETE RESTRICT — must be reassigned or the
+        // whole delete fails (any member who ever made a factor was unpurgeable).
+        prisma.factor.updateMany({ where: { creatorId: u.id }, data: { creatorId: admin.id } }),
+        prisma.factor.updateMany({ where: { confirmedById: u.id }, data: { confirmedById: admin.id } }),
         prisma.task.updateMany({ where: { assigneeId: u.id }, data: { assigneeId: admin.id } }),
         prisma.message.updateMany({ where: { senderId: u.id }, data: { senderId: admin.id } }),
         prisma.channel.updateMany({ where: { createdById: u.id }, data: { createdById: admin.id } }),

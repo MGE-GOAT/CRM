@@ -37,20 +37,6 @@ function assertCanManageRole(callerRole: Role, targetRole: Role, nextRole?: Role
   }
 }
 
-async function assertNotLastOwner(targetId: string) {
-  const target = await prisma.user.findUnique({
-    where: { id: targetId },
-    select: { role: true },
-  });
-  if (!target || target.role !== "OWNER") return;
-  const activeOwners = await prisma.user.count({
-    where: { role: "OWNER", isActive: true },
-  });
-  if (activeOwners <= 1) {
-    throw new Error("نمی‌توان آخرین مالک را حذف یا غیرفعال کرد.");
-  }
-}
-
 export async function createUser(formData: FormData): Promise<FormResult> {
   const caller = await requireRole("OWNER", "ADMIN");
   try {
@@ -95,12 +81,20 @@ export async function updateUserRole(id: string, role: string): Promise<FormResu
     });
     assertCanManageRole(caller.role, target.role, nextRole);
 
-    // Demoting an owner away from OWNER must not orphan the system.
+    // Demoting an owner away from OWNER must not orphan the system. Apply +
+    // re-check atomically (serializable) so concurrent demotions can't both win.
     if (target.role === "OWNER" && nextRole !== "OWNER") {
-      await assertNotLastOwner(id);
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.user.update({ where: { id }, data: { role: nextRole } });
+          const remaining = await tx.user.count({ where: { role: "OWNER", isActive: true } });
+          if (remaining < 1) throw new Error("نمی‌توان آخرین مالک را حذف یا غیرفعال کرد.");
+        },
+        { isolationLevel: "Serializable" },
+      );
+    } else {
+      await prisma.user.update({ where: { id }, data: { role: nextRole } });
     }
-
-    await prisma.user.update({ where: { id }, data: { role: nextRole } });
     revalidatePath("/settings/users");
   } catch (e) {
     return formError(e);
@@ -118,16 +112,27 @@ export async function toggleUserActive(id: string): Promise<FormResult> {
     });
     assertCanManageRole(caller.role, target.role);
 
-    // Server decides the next state (don't trust the client) and guards last owner.
-    if (target.isActive) await assertNotLastOwner(id);
-
     const nextActive = !target.isActive;
-    await prisma.user.update({
-      where: { id },
-      // Stamp the deactivation time (cleared on reactivate) so the purge job
-      // can auto-delete accounts that stay deactivated past the grace window.
-      data: { isActive: nextActive, deactivatedAt: nextActive ? null : new Date() },
-    });
+    // Deactivating an owner: apply then re-check inside one serializable
+    // transaction so two owners deactivating each other at once can't both
+    // succeed and orphan the system (last-owner guard is now atomic).
+    if (!nextActive && target.role === "OWNER") {
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.user.update({ where: { id }, data: { isActive: false, deactivatedAt: new Date() } });
+          const remaining = await tx.user.count({ where: { role: "OWNER", isActive: true } });
+          if (remaining < 1) throw new Error("نمی‌توان آخرین مالک را حذف یا غیرفعال کرد.");
+        },
+        { isolationLevel: "Serializable" },
+      );
+    } else {
+      await prisma.user.update({
+        where: { id },
+        // Stamp the deactivation time (cleared on reactivate) so the purge job
+        // can auto-delete accounts that stay deactivated past the grace window.
+        data: { isActive: nextActive, deactivatedAt: nextActive ? null : new Date() },
+      });
+    }
     revalidatePath("/settings/users");
   } catch (e) {
     return formError(e);

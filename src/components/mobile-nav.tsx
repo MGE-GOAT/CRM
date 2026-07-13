@@ -62,7 +62,7 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-40 flex">
+        <div className="fixed inset-0 z-50 flex">
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => setOpen(false)}
@@ -71,7 +71,7 @@ export function MobileNav({ canManageUsers }: { canManageUsers: boolean }) {
             role="dialog"
             aria-modal="true"
             aria-label="منوی ناوبری"
-            className="relative z-10 w-64 max-w-[80vw] bg-sidebar-bg p-4 text-sidebar-text"
+            className="relative z-10 flex h-full w-64 max-w-[80vw] flex-col overflow-y-auto bg-sidebar-bg p-4 text-sidebar-text"
           >
             <div className="mb-4 flex items-center justify-between">
               <Logo width={120} />

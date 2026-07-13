@@ -57,6 +57,9 @@ export async function AttendanceSection({ month, userId }: Props) {
         parentFactorId: null,
         paidAt: { gte: start, lt: end },
         state: { in: ["PAID", "SENDING", "EXIT"] },
+        // Scope to the selected user too — otherwise the per-user recap grid
+        // leaks in paid-factor counts (and rows) for every other user.
+        ...(userId ? { creatorId: userId } : {}),
       },
       select: { creatorId: true, paymentKind: true },
     }),

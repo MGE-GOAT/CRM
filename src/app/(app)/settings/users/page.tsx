@@ -54,7 +54,7 @@ export default async function UsersPage() {
             <thead className="border-b-2 border-[color:var(--rule)] bg-surface-2 text-right text-xs tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">عضو</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">تاریخ عضویت</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">تاریخ عضویت</th>
                 <th className="hidden px-4 py-3 font-medium lg:table-cell">فعالیت‌ها</th>
                 <th className="px-4 py-3 font-medium">نقش</th>
                 <th className="px-4 py-3 font-medium">وضعیت</th>
@@ -82,7 +82,7 @@ export default async function UsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="hidden px-4 py-3 text-muted md:table-cell">
+                    <td className="hidden px-4 py-3 text-muted lg:table-cell">
                       {formatDate(u.createdAt)}
                     </td>
                     <td className="hidden px-4 py-3 text-muted lg:table-cell">

@@ -17,7 +17,7 @@ export function DuplicateButton({
       disabled={pending}
       aria-label={label}
       title={label}
-      className="rounded-lg p-1.5 text-muted hover:bg-[var(--gold-tint)] hover:text-text disabled:opacity-50"
+      className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-[var(--gold-tint)] hover:text-text disabled:opacity-50"
     >
       <Copy size={16} aria-hidden="true" />
     </button>

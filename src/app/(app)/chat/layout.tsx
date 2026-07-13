@@ -37,6 +37,7 @@ export default async function ChatLayout({
           channelId: m.channelId,
           createdAt: { gt: m.lastReadAt },
           senderId: { not: user.id },
+          deletedAt: null, // a since-deleted message must not keep the badge lit
         },
       });
       const other = m.channel.isDirect

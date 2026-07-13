@@ -87,7 +87,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto p-4 sm:p-6">
+    <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto p-4 sm:p-6">
       {COLUMNS.map((col) => {
         const colDeals = deals.filter((d) => d.stage === col.key);
         const total = colDeals.reduce((s, d) => s + d.value, 0);

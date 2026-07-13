@@ -162,8 +162,12 @@ export async function POST(req: Request) {
   }
 
   // Keep only the newest ARCHIVE_LIMIT seen notifs; prune the oldest.
+  // REMINDER rows are exempt: materializeDueReminders dedups on the EXISTENCE of
+  // a notification for that reminder (sourceId), so pruning an acknowledged-but-
+  // still-due reminder would resurrect it as unread on the next poll. One row
+  // per reminder per user (via @@unique) keeps that bounded.
   const keep = await prisma.notification.findMany({
-    where: { userId: user.id, read: true },
+    where: { userId: user.id, read: true, type: { not: "REMINDER" } },
     orderBy: { createdAt: "desc" },
     skip: ARCHIVE_LIMIT,
     take: 200,

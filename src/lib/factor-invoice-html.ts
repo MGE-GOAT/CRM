@@ -45,7 +45,9 @@ const esc = (s: unknown) =>
 
 /** A self-contained, print-ready A4 invoice HTML for one factor (embedded font). */
 export function factorInvoiceHtml(f: InvoiceFactor): string {
-  const subtotal = f.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
+  // Round each line before summing (matches factorSubtotal) so the printed rows
+  // add up to the printed «جمع کل» even with fractional quantities.
+  const subtotal = f.items.reduce((s, it) => s + Math.round(it.quantity * it.unitPrice), 0);
   const idRows = [
     ["شناسه/کد ملی", f.buyerNationalId],
     ["شماره اقتصادی", f.buyerEconomicCode],
@@ -60,7 +62,7 @@ export function factorInvoiceHtml(f: InvoiceFactor): string {
       <td>${esc(it.name)}${it.description ? `<div class="desc">${esc(it.description)}</div>` : ""}</td>
       <td class="c">${fa(it.quantity)}</td>
       <td class="n">${fa(it.unitPrice)}</td>
-      <td class="n">${fa(it.quantity * it.unitPrice)}</td>
+      <td class="n">${fa(Math.round(it.quantity * it.unitPrice))}</td>
     </tr>`,
     )
     .join("");

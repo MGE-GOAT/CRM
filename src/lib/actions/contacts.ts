@@ -259,7 +259,9 @@ export async function importContacts(formData: FormData): Promise<ImportResult> 
         title: c.title ? c.title.slice(0, 200) : null,
         senf: c.senf ? c.senf.slice(0, 120) : null,
         notes: c.notes ? c.notes.slice(0, 10000) : null,
-        companyId: (c.company && companyId.get(c.company.trim())) || null,
+        // Key with the SAME slice(0,200) used to build the company map, or
+        // names >200 chars silently fail to link (and duplicate companies form).
+        companyId: (c.company && companyId.get(c.company.trim().slice(0, 200))) || null,
         ownerId,
       }));
       const res = await prisma.contact.createMany({ data });

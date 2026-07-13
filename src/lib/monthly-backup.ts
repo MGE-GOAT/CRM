@@ -177,13 +177,36 @@ export async function buildMonthArchive(month: string, db: Db = prisma) {
         source: s.source,
         checked: s.checked,
         checkedAt: s.checkedAt ? s.checkedAt.toISOString() : null,
-        // The source's own (edited) child factor, preserved before purge.
+        // The source's own (edited) child factor, preserved in FULL before the
+        // purge cascade-deletes it — buyer/seller identity, state, notes and
+        // timestamps included, so nothing editable is lost from the archive.
         childFactor: s.child
           ? {
               number: s.child.number,
-              payableRial: Math.round(factorPayable(s.child)),
+              state: s.child.state,
+              stateLabel: STATE_LABEL[s.child.state],
+              paymentKind: s.child.paymentKind,
+              paymentKindLabel: PAYMENT_KIND_LABEL[s.child.paymentKind],
+              buyerName: s.child.buyerName,
+              buyerPhone: s.child.buyerPhone,
+              buyerAddress: s.child.buyerAddress,
+              buyerEconomicCode: s.child.buyerEconomicCode,
+              buyerNationalId: s.child.buyerNationalId,
+              buyerRegistrationNumber: s.child.buyerRegistrationNumber,
+              buyerPostalCode: s.child.buyerPostalCode,
+              sellerName: s.child.sellerName,
+              sellerAddress: s.child.sellerAddress,
+              sellerPhone: s.child.sellerPhone,
+              sellerMobile: s.child.sellerMobile,
+              sellerInstagram: s.child.sellerInstagram,
+              sellerWebsite: s.child.sellerWebsite,
               discount: Number(s.child.discount),
               vat: Number(s.child.vat),
+              payableRial: Math.round(factorPayable(s.child)),
+              notes: s.child.notes,
+              createdAt: s.child.createdAt.toISOString(),
+              sentAt: s.child.sentAt ? s.child.sentAt.toISOString() : null,
+              archivedAt: s.child.archivedAt ? s.child.archivedAt.toISOString() : null,
               items: s.child.items.map((it) => ({
                 row: it.row,
                 name: it.name,
@@ -288,4 +311,23 @@ export async function closeMonth(
     }
     throw e;
   }
+}
+
+/**
+ * Reclaim storage from factors that were still in-flight (SENDING) when their
+ * month was archived and only later reached EXIT/CANCELED: closeMonth is
+ * idempotent-blocked once the archive exists, so these would otherwise stay live
+ * forever. They were already captured in the archive snapshot at close time, so
+ * purging the now-finished rows here is safe (children cascade). Returns count.
+ */
+export async function sweepFinishedInClosedMonths(db: Db = prisma): Promise<number> {
+  const archived = await db.monthlyArchive.findMany({ select: { month: true } });
+  if (archived.length === 0) return 0;
+  const res = await db.factor.deleteMany({
+    where: {
+      monthKey: { in: archived.map((a) => a.month) },
+      state: { in: ["EXIT", "CANCELED"] },
+    },
+  });
+  return res.count;
 }
