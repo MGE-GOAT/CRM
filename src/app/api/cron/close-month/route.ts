@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { recentMonths } from "@/lib/attendance-report";
 import { closeMonth, sweepFinishedInClosedMonths } from "@/lib/monthly-backup";
+import { purgeOldChatMessages } from "@/lib/chat-retention";
 
 export const dynamic = "force-dynamic";
 
@@ -30,5 +31,13 @@ export async function POST(req: NextRequest) {
   const result = await closeMonth(previous);
   // Reclaim any factors that finished AFTER their month was already archived.
   const sweptLeftovers = await sweepFinishedInClosedMonths();
-  return NextResponse.json({ ...result, sweptLeftovers });
+  // Storage control: permanently delete chat messages (+ their files) older
+  // than the retention window.
+  const chat = await purgeOldChatMessages(new Date());
+  return NextResponse.json({
+    ...result,
+    sweptLeftovers,
+    purgedChatMessages: chat.messages,
+    purgedChatFiles: chat.files,
+  });
 }
