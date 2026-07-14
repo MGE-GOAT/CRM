@@ -152,6 +152,34 @@ export async function createFactor(formData: FormData): Promise<FormResult> {
     }
     if (!factor) throw new Error("ثبت فاکتور ناموفق بود. دوباره تلاش کنید.");
 
+    // Sync the buyer details back onto the linked contact (we know which one).
+    // Never touch the contact's real name (firstName/lastName): fill factorName
+    // only if it's empty, and refresh the other info fields with whatever the
+    // user typed. Best-effort — must not fail the factor create.
+    if (d.contactId) {
+      try {
+        const contact = await prisma.contact.findUnique({
+          where: { id: d.contactId },
+          select: { factorName: true },
+        });
+        if (contact) {
+          const patch: Prisma.ContactUpdateInput = {};
+          if (!contact.factorName?.trim() && d.buyerName) patch.factorName = d.buyerName;
+          if (d.buyerPhone) patch.phone = d.buyerPhone;
+          if (d.buyerAddress) patch.notes = d.buyerAddress; // notes = address in this app
+          if (d.buyerEconomicCode) patch.economicCode = d.buyerEconomicCode;
+          if (d.buyerNationalId) patch.nationalId = d.buyerNationalId;
+          if (d.buyerRegistrationNumber) patch.registrationNumber = d.buyerRegistrationNumber;
+          if (d.buyerPostalCode) patch.postalCode = d.buyerPostalCode;
+          if (Object.keys(patch).length > 0) {
+            await prisma.contact.update({ where: { id: d.contactId }, data: patch });
+          }
+        }
+      } catch (err) {
+        console.error("contact sync-back failed", err);
+      }
+    }
+
     // Notify every owner — best-effort. The factor is already committed above,
     // so a notification failure must NOT fail the whole action (which would make
     // the user retry and create a duplicate). Same pattern as the chat/task

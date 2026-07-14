@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select, Textarea, SubmitButton, ModalForm } from "@/components/ui/form";
+import { Combobox } from "@/components/ui/combobox";
 import { PAYMENT_KIND_LABEL } from "@/lib/factor";
 import { formatNumber, parseAmount } from "@/lib/format";
 import { numberToPersianWords } from "@/lib/num-to-fa";
@@ -194,14 +195,13 @@ function FactorFormBody({
 
       {contacts.length > 0 && (
         <Field label="انتخاب از مخاطبین (اختیاری)">
-          <Select value={contactId} onChange={(e) => onPickContact(e.target.value)}>
-            <option value="">— بدون مخاطب —</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          <Combobox
+            value={contactId}
+            onChange={onPickContact}
+            options={contacts.map((c) => ({ value: c.id, label: c.name }))}
+            placeholder="نام مخاطب را تایپ کنید…"
+            emptyOptionLabel="— بدون مخاطب —"
+          />
         </Field>
       )}
 
