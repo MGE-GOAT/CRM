@@ -1,7 +1,11 @@
 import type { Prisma } from "@prisma/client";
 
 // Minimal shape needed to compute a factor's monetary totals.
-type ItemLike = { quantity: Prisma.Decimal | number; unitPrice: Prisma.Decimal | number };
+type ItemLike = {
+  metrage?: Prisma.Decimal | number | null;
+  quantity: Prisma.Decimal | number;
+  unitPrice: Prisma.Decimal | number;
+};
 type FactorLike = {
   items: ItemLike[];
   discount: Prisma.Decimal | number;
@@ -15,7 +19,8 @@ type FactorLike = {
  */
 export function factorSubtotal(items: ItemLike[]): number {
   return items.reduce(
-    (sum, it) => sum + Math.round(Number(it.quantity) * Number(it.unitPrice)),
+    (sum, it) =>
+      sum + Math.round(Number(it.metrage ?? 1) * Number(it.quantity) * Number(it.unitPrice)),
     0
   );
 }

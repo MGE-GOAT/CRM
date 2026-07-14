@@ -51,7 +51,7 @@ export default async function AttendanceDrilldownPage({
         paidAt: { gte: start, lt: end },
         state: { in: ["PAID", "SENDING", "EXIT"] },
       },
-      include: { items: { select: { quantity: true, unitPrice: true } } },
+      include: { items: { select: { metrage: true, quantity: true, unitPrice: true } } },
       orderBy: { paidAt: "desc" },
     }),
   ]);

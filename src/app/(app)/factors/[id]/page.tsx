@@ -106,6 +106,7 @@ export default async function FactorDetailPage({
     sellerWebsite: factor.sellerWebsite,
     items: factor.items.map((it) => ({
       name: it.name,
+      metrage: String(Number(it.metrage)),
       quantity: String(Number(it.quantity)),
       unitPrice: String(Number(it.unitPrice)),
       description: it.description ?? "",
@@ -162,14 +163,14 @@ export default async function FactorDetailPage({
           <div className="flex items-center gap-4">
             <Image
               src="/brand/spun-logo-bw.png"
-              alt="ایران اسپان"
+              alt="اسپان هلدینگ"
               width={112}
               height={49}
               className="h-auto w-24 shrink-0 sm:w-28"
               priority
             />
             <div className="border-s border-[color:var(--gold-hair)] ps-4">
-              <h1 className="text-lg font-black tracking-tight sm:text-xl">ایران اسپان</h1>
+              <h1 className="text-lg font-black tracking-tight sm:text-xl">{factor.sellerName}</h1>
               <p className="mt-0.5 text-xs text-[color:var(--gold-ink)] sm:text-sm">
                 صورتحساب فروش کالا / خدمات
               </p>
@@ -274,6 +275,7 @@ export default async function FactorDetailPage({
                     <th className="border-b border-[color:var(--gold-hair)] px-3 py-2.5 text-start font-bold">
                       نام کالا / خدمات
                     </th>
+                    <th className="border-b border-[color:var(--gold-hair)] px-3 py-2.5 font-bold">متراژ</th>
                     <th className="border-b border-[color:var(--gold-hair)] px-3 py-2.5 font-bold">تعداد</th>
                     <th className="border-b border-[color:var(--gold-hair)] px-3 py-2.5 font-bold">بهای واحد</th>
                     <th className="border-b border-[color:var(--gold-hair)] px-3 py-2.5 font-bold">مبلغ کل</th>
@@ -288,13 +290,16 @@ export default async function FactorDetailPage({
                       </td>
                       <td className="border-b border-border px-3 py-2.5 font-medium">{it.name}</td>
                       <td className="border-b border-border px-3 py-2.5 text-center tabular-nums">
+                        {formatNumber(Number(it.metrage))}
+                      </td>
+                      <td className="border-b border-border px-3 py-2.5 text-center tabular-nums">
                         {formatNumber(Number(it.quantity))}
                       </td>
                       <td className="border-b border-border px-3 py-2.5 text-center tabular-nums">
                         {formatNumber(Number(it.unitPrice))}
                       </td>
                       <td className="border-b border-border px-3 py-2.5 text-center font-medium tabular-nums">
-                        {formatNumber(Math.round(Number(it.quantity) * Number(it.unitPrice)))}
+                        {formatNumber(Math.round(Number(it.metrage) * Number(it.quantity) * Number(it.unitPrice)))}
                       </td>
                       <td className="border-b border-border px-3 py-2.5 text-muted">
                         {it.description ?? "—"}

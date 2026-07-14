@@ -24,11 +24,11 @@ export default async function SentFactorDetailPage({
   const factor = await prisma.factor.findUnique({
     where: { id },
     include: {
-      items: { select: { quantity: true, unitPrice: true } },
+      items: { select: { metrage: true, quantity: true, unitPrice: true } },
       sources: {
         orderBy: { source: "asc" },
         include: {
-          child: { include: { items: { select: { quantity: true, unitPrice: true } } } },
+          child: { include: { items: { select: { metrage: true, quantity: true, unitPrice: true } } } },
         },
       },
     },

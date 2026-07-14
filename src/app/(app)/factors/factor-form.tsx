@@ -23,6 +23,7 @@ export type ContactOption = {
 
 export type LineItemInput = {
   name: string;
+  metrage: string;
   quantity: string;
   unitPrice: string;
   description: string;
@@ -71,7 +72,7 @@ function emptyInitial(): FactorInitial {
     vat: "0",
     notes: DEFAULT_NOTES,
     ...SELLER_DEFAULTS,
-    items: [{ name: "", quantity: "1", unitPrice: "0", description: "" }],
+    items: [{ name: "", metrage: "1", quantity: "1", unitPrice: "0", description: "" }],
   };
 }
 
@@ -149,7 +150,7 @@ function FactorFormBody({
   const [showSeller, setShowSeller] = useState(false);
 
   const subtotal = items.reduce(
-    (sum, it) => sum + parseAmount(it.quantity) * parseAmount(it.unitPrice),
+    (sum, it) => sum + parseAmount(it.metrage) * parseAmount(it.quantity) * parseAmount(it.unitPrice),
     0,
   );
   const payable = Math.max(0, subtotal - parseAmount(discount) + parseAmount(vat));
@@ -157,7 +158,7 @@ function FactorFormBody({
   const updateItem = (idx: number, patch: Partial<LineItemInput>) =>
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   const addItem = () =>
-    setItems((prev) => [...prev, { name: "", quantity: "1", unitPrice: "0", description: "" }]);
+    setItems((prev) => [...prev, { name: "", metrage: "1", quantity: "1", unitPrice: "0", description: "" }]);
   const removeItem = (idx: number) =>
     setItems((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
 
@@ -182,6 +183,7 @@ function FactorFormBody({
   const itemsJson = JSON.stringify(
     items.map((it) => ({
       name: it.name,
+      metrage: parseAmount(it.metrage),
       quantity: parseAmount(it.quantity),
       unitPrice: parseAmount(it.unitPrice),
       description: it.description || undefined,
@@ -306,22 +308,32 @@ function FactorFormBody({
         <div className="space-y-3">
           {/* Persistent column labels (placeholders vanish once a row is filled) */}
           <div className="hidden grid-cols-12 gap-2 px-3 text-xs font-medium text-faint sm:grid">
-            <div className="col-span-5">نام کالا/خدمات</div>
+            <div className="col-span-4">نام کالا/خدمات</div>
+            <div className="col-span-2">متراژ</div>
             <div className="col-span-2">تعداد</div>
-            <div className="col-span-4">بهای واحد (ریال)</div>
+            <div className="col-span-3">بهای واحد (ریال)</div>
             <div className="col-span-1" />
           </div>
           {items.map((it, idx) => {
-            const lineTotal = parseAmount(it.quantity) * parseAmount(it.unitPrice);
+            const lineTotal =
+              parseAmount(it.metrage) * parseAmount(it.quantity) * parseAmount(it.unitPrice);
             return (
               <div key={idx} className="rounded-lg border border-border bg-surface-2 p-3">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
-                  <div className="sm:col-span-5">
+                  <div className="sm:col-span-4">
                     <Input
                       placeholder="نام کالا/خدمات"
                       value={it.name}
                       onChange={(e) => updateItem(idx, { name: e.target.value })}
                       required
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Input
+                      placeholder="متراژ"
+                      inputMode="decimal"
+                      value={it.metrage}
+                      onChange={(e) => updateItem(idx, { metrage: e.target.value })}
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -332,7 +344,7 @@ function FactorFormBody({
                       onChange={(e) => updateItem(idx, { quantity: e.target.value })}
                     />
                   </div>
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-3">
                     <Input
                       placeholder="بهای واحد (ریال)"
                       inputMode="numeric"
@@ -350,7 +362,7 @@ function FactorFormBody({
                       <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
-                  <div className="sm:col-span-11">
+                  <div className="sm:col-span-12">
                     <Input
                       placeholder="شرح (اختیاری)"
                       value={it.description}

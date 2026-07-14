@@ -47,7 +47,7 @@ export async function buildMonthlyBackup(month: string, db: Db = prisma) {
         state: { in: ["PAID", "SENDING", "EXIT"] },
       },
       include: {
-        items: { select: { quantity: true, unitPrice: true } },
+        items: { select: { metrage: true, quantity: true, unitPrice: true } },
         creator: { select: { name: true } },
       },
       orderBy: [{ paidAt: "asc" }],
@@ -169,6 +169,7 @@ export async function buildMonthArchive(month: string, db: Db = prisma) {
       items: f.items.map((it) => ({
         row: it.row,
         name: it.name,
+        metrage: Number(it.metrage),
         quantity: Number(it.quantity),
         unitPrice: Number(it.unitPrice),
         description: it.description,
@@ -210,6 +211,7 @@ export async function buildMonthArchive(month: string, db: Db = prisma) {
               items: s.child.items.map((it) => ({
                 row: it.row,
                 name: it.name,
+                metrage: Number(it.metrage),
                 quantity: Number(it.quantity),
                 unitPrice: Number(it.unitPrice),
                 description: it.description,

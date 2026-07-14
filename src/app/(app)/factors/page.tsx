@@ -33,7 +33,7 @@ export default async function FactorsPage() {
       where: { parentFactorId: null, ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }) },
       orderBy: [{ createdAt: "desc" }],
       include: {
-        items: { select: { quantity: true, unitPrice: true } },
+        items: { select: { metrage: true, quantity: true, unitPrice: true } },
         creator: { select: { id: true, name: true, avatarColor: true } },
       },
     }),

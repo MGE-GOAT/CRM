@@ -32,7 +32,7 @@ export default async function ContactDetailPage({
         // the contact) so the contact's list/totals don't double-count.
         where: { parentFactorId: null, ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }) },
         orderBy: { createdAt: "desc" },
-        include: { items: { select: { quantity: true, unitPrice: true } } },
+        include: { items: { select: { metrage: true, quantity: true, unitPrice: true } } },
       },
     },
   });
@@ -63,7 +63,7 @@ export default async function ContactDetailPage({
     vat: "0",
     notes: "اعتبار پیش فاکتور درصورت واریز نقدی حداکثر ۴۸ ساعت می‌باشد",
     ...SELLER_DEFAULTS,
-    items: [{ name: "", quantity: "1", unitPrice: "0", description: "" }],
+    items: [{ name: "", metrage: "1", quantity: "1", unitPrice: "0", description: "" }],
   };
 
   return (

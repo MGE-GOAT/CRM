@@ -112,6 +112,7 @@ export async function ensureSourceChildren(parentId: string): Promise<void> {
     const itemsData = parent.items.map((it) => ({
       row: it.row,
       name: it.name,
+      metrage: it.metrage,
       quantity: it.quantity,
       unitPrice: it.unitPrice,
       description: it.description,

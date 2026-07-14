@@ -26,7 +26,7 @@ export default async function SentFactorsPage() {
       where: { parentFactorId: null, state: { in: ["SENDING", "EXIT"] } },
       orderBy: [{ sentAt: "desc" }],
       include: {
-        items: { select: { quantity: true, unitPrice: true } },
+        items: { select: { metrage: true, quantity: true, unitPrice: true } },
         sources: { select: { checked: true } },
       },
     }),

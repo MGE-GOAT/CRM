@@ -509,6 +509,7 @@ model FactorItem {
   factor    Factor  @relation(fields: [factorId], references: [id], onDelete: Cascade)
   row       Int // ردیف
   name      String // نام کالا/خدمات
+  metrage   Decimal @default(1) @db.Decimal(14, 2) // متراژ — امتیاز ضرب‌شونده در تعداد×بهای‌واحد
   quantity  Decimal @default(0) @db.Decimal(14, 2) // تعداد/مقدار
   unitPrice Decimal @default(0) @db.Decimal(16, 0) // بهای واحد (ریال)
   description String? // شرح کالا

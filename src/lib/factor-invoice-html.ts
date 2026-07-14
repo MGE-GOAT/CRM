@@ -1,4 +1,5 @@
 import { VAZIR_400, VAZIR_700 } from "@/lib/fonts/vazirmatn";
+import { SPUN_LOGO_DATA_URI } from "@/lib/spun-logo";
 import { numberToPersianWords } from "@/lib/num-to-fa";
 
 // The subset of archived-factor fields the invoice needs. Matches the shape of
@@ -25,7 +26,7 @@ export type InvoiceFactor = {
   payableRial: number;
   notes?: string | null;
   createdAt: string;
-  items: { row: number; name: string; quantity: number; unitPrice: number; description?: string | null }[];
+  items: { row: number; name: string; metrage?: number; quantity: number; unitPrice: number; description?: string | null }[];
 };
 
 const fa = (n: number) => new Intl.NumberFormat("fa-IR").format(Math.round(n));
@@ -47,7 +48,10 @@ const esc = (s: unknown) =>
 export function factorInvoiceHtml(f: InvoiceFactor): string {
   // Round each line before summing (matches factorSubtotal) so the printed rows
   // add up to the printed «جمع کل» even with fractional quantities.
-  const subtotal = f.items.reduce((s, it) => s + Math.round(it.quantity * it.unitPrice), 0);
+  const subtotal = f.items.reduce(
+    (s, it) => s + Math.round((it.metrage ?? 1) * it.quantity * it.unitPrice),
+    0,
+  );
   const idRows = [
     ["شناسه/کد ملی", f.buyerNationalId],
     ["شماره اقتصادی", f.buyerEconomicCode],
@@ -60,9 +64,10 @@ export function factorInvoiceHtml(f: InvoiceFactor): string {
       (it) => `<tr>
       <td class="c">${fa(it.row)}</td>
       <td>${esc(it.name)}${it.description ? `<div class="desc">${esc(it.description)}</div>` : ""}</td>
+      <td class="c">${fa(it.metrage ?? 1)}</td>
       <td class="c">${fa(it.quantity)}</td>
       <td class="n">${fa(it.unitPrice)}</td>
-      <td class="n">${fa(Math.round(it.quantity * it.unitPrice))}</td>
+      <td class="n">${fa(Math.round((it.metrage ?? 1) * it.quantity * it.unitPrice))}</td>
     </tr>`,
     )
     .join("");
@@ -72,8 +77,12 @@ export function factorInvoiceHtml(f: InvoiceFactor): string {
 @font-face{font-family:'Vazirmatn';font-weight:400;src:url('${VAZIR_400}') format('woff2');}
 @font-face{font-family:'Vazirmatn';font-weight:700;src:url('${VAZIR_700}') format('woff2');}
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{font-family:'Vazirmatn',sans-serif;color:#1a1a1a;font-size:12px;line-height:1.7;}
-.page{padding:28px 30px;}
+@page{size:A4 landscape;margin:8mm;}
+html,body{font-family:'Vazirmatn',sans-serif;color:#1a1a1a;font-size:12px;line-height:1.7;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{padding:22px 26px;}
+.logo{height:44px;width:auto;}
+.brandrow{display:flex;align-items:center;gap:12px;}
+.sig-logo{height:40px;width:auto;display:block;margin:8px auto 0;}
 .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #b8860b;padding-bottom:12px;margin-bottom:16px;}
 .brand{font-size:20px;font-weight:700;color:#8a6d1a;}
 .sub{color:#666;font-size:11px;}
@@ -101,9 +110,12 @@ td.n,th.n{text-align:left;font-variant-numeric:tabular-nums;}
 </style></head>
 <body><div class="page">
   <div class="head">
-    <div>
-      <div class="brand">${esc(f.sellerName || "اسپان هلدینگ")}</div>
-      <div class="sub">صورتحساب فروش کالا / خدمات</div>
+    <div class="brandrow">
+      <img class="logo" src="${SPUN_LOGO_DATA_URI}" alt="اسپان هلدینگ"/>
+      <div>
+        <div class="brand">${esc(f.sellerName || "اسپان هلدینگ")}</div>
+        <div class="sub">صورتحساب فروش کالا / خدمات</div>
+      </div>
     </div>
     <div class="docmeta">
       <div><span class="tag">${esc(f.stateLabel)}</span></div>
@@ -130,7 +142,7 @@ td.n,th.n{text-align:left;font-variant-numeric:tabular-nums;}
   </div>
 
   <table>
-    <thead><tr><th class="c">ردیف</th><th>نام کالا / خدمات</th><th class="c">تعداد</th><th class="n">بهای واحد (ریال)</th><th class="n">مبلغ کل (ریال)</th></tr></thead>
+    <thead><tr><th class="c">ردیف</th><th>نام کالا / خدمات</th><th class="c">متراژ</th><th class="c">تعداد</th><th class="n">بهای واحد (ریال)</th><th class="n">مبلغ کل (ریال)</th></tr></thead>
     <tbody>${itemsHtml}</tbody>
   </table>
 
@@ -144,6 +156,6 @@ td.n,th.n{text-align:left;font-variant-numeric:tabular-nums;}
   <div class="note">نوع پرداخت: ${esc(f.paymentKindLabel)}</div>
   ${f.notes ? `<div class="note">${esc(f.notes)}</div>` : ""}
 
-  <div class="foot"><span>مهر و امضای فروشنده</span><span>مهر و امضای خریدار</span></div>
+  <div class="foot"><span>مهر و امضای فروشنده<img class="sig-logo" src="${SPUN_LOGO_DATA_URI}" alt="اسپان هلدینگ"/></span><span>مهر و امضای خریدار</span></div>
 </div></body></html>`;
 }

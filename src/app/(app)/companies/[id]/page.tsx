@@ -32,7 +32,7 @@ export default async function CompanyDetailPage({
         ...(isManager ? {} : { state: { notIn: OWNER_ONLY_STATES } }),
       },
       orderBy: { createdAt: "desc" },
-      include: { items: { select: { quantity: true, unitPrice: true } } },
+      include: { items: { select: { metrage: true, quantity: true, unitPrice: true } } },
     }),
   ]);
 

@@ -22,6 +22,8 @@ import { PaymentKind, SourceKind, Prisma } from "@prisma/client";
 // A single line item as submitted from the create/edit form.
 const itemSchema = z.object({
   name: z.string().min(1, "نام کالا الزامی است").max(300),
+  // متراژ — multiplier: line amount = metrage × quantity × unitPrice. Default 1.
+  metrage: z.coerce.number().min(0, "متراژ نامعتبر است").default(1),
   quantity: z.coerce.number().min(0, "تعداد نامعتبر است"),
   unitPrice: z.coerce.number().min(0, "بهای واحد نامعتبر است"),
   description: z.string().max(500).optional(),
@@ -108,6 +110,7 @@ export async function createFactor(formData: FormData): Promise<FormResult> {
     const itemsData = d.items.map((it, idx) => ({
       row: idx + 1,
       name: it.name,
+      metrage: it.metrage,
       quantity: it.quantity,
       unitPrice: it.unitPrice,
       description: it.description || null,
@@ -554,6 +557,7 @@ export async function updateFactor(id: string, formData: FormData): Promise<Form
           factorId: id,
           row: idx + 1,
           name: it.name,
+          metrage: it.metrage,
           quantity: it.quantity,
           unitPrice: it.unitPrice,
           description: it.description || null,
@@ -607,7 +611,7 @@ export async function shareFactorToChannel(
         paymentKind: true,
         discount: true,
         vat: true,
-        items: { select: { quantity: true, unitPrice: true } },
+        items: { select: { metrage: true, quantity: true, unitPrice: true } },
       },
     });
     // Visibility: non-managers can't share paid-onward factors.
