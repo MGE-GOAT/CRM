@@ -22,12 +22,15 @@ export function ChannelSidebar({
   channels,
   users,
   ownerId,
+  canStartDm = false,
   createChannel,
   startDirectMessage,
 }: {
   channels: Channel[];
   users: UserOption[];
   ownerId: string;
+  /** Only the owner may START a private chat (others can still reply in one). */
+  canStartDm?: boolean;
   createChannel: (formData: FormData) => Promise<{ id?: string; error?: string }>;
   startDirectMessage: (userId: string) => Promise<{ id?: string; error?: string }>;
 }) {
@@ -69,34 +72,39 @@ export function ChannelSidebar({
           ))}
         </div>
 
-        {/* Direct messages */}
-        <div>
-          <span className="px-2 text-xs font-medium tracking-wide text-muted">
-            پیام‌های مستقیم
-          </span>
-          {dms.map((c) => (
-            <ChannelLink key={c.id} channel={c} active={activeId === c.id} />
-          ))}
-
-          <div className="mt-1 border-t border-border pt-2">
-            <span className="px-2 text-xs text-muted">شروع گفتگو</span>
-            {dmError && (
-              <p role="alert" className="px-2 py-1 text-xs text-red-600">
-                {dmError}
-              </p>
-            )}
-            {users.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => openDm(u.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-[var(--gold-tint)]"
-              >
-                <Avatar name={u.name} color={u.avatarColor} size={22} />
-                {u.name}
-              </button>
+        {/* Direct messages — existing DMs show for everyone; only the owner can
+            START a new one. */}
+        {(canStartDm || dms.length > 0) && (
+          <div>
+            <span className="px-2 text-xs font-medium tracking-wide text-muted">
+              پیام‌های مستقیم
+            </span>
+            {dms.map((c) => (
+              <ChannelLink key={c.id} channel={c} active={activeId === c.id} />
             ))}
+
+            {canStartDm && (
+              <div className="mt-1 border-t border-border pt-2">
+                <span className="px-2 text-xs text-muted">شروع گفتگو</span>
+                {dmError && (
+                  <p role="alert" className="px-2 py-1 text-xs text-red-600">
+                    {dmError}
+                  </p>
+                )}
+                {users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => openDm(u.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-[var(--gold-tint)]"
+                  >
+                    <Avatar name={u.name} color={u.avatarColor} size={22} />
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );

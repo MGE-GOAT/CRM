@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser, systemOwnerId } from "@/lib/rbac";
+import { requireUser, systemOwnerId, isOwner } from "@/lib/rbac";
 import { ChannelSidebar } from "@/components/chat/channel-sidebar";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { createChannel, startDirectMessage } from "@/lib/actions/chat";
@@ -71,6 +71,7 @@ export default async function ChatLayout({
           channels={channels}
           users={users}
           ownerId={ownerId}
+          canStartDm={isOwner(user.role)}
           createChannel={createChannel}
           startDirectMessage={startDirectMessage}
         />

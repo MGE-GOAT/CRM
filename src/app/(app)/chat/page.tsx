@@ -8,7 +8,7 @@ export default function ChatEmptyState() {
       </div>
       <h2 className="mt-4 text-lg font-bold tracking-tight text-text">گفتگوهای تیمی شما</h2>
       <p className="mt-1.5 max-w-xs text-sm leading-relaxed">
-        برای شروع گفتگو، یک کانال را انتخاب کنید یا از نوار کناری یک پیام مستقیم آغاز کنید.
+        برای شروع، یک کانال را از نوار کناری انتخاب کنید.
       </p>
     </div>
   );

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers, roleRank, systemOwnerId } from "@/lib/rbac";
+import { requireUser, canManageUsers, roleRank, systemOwnerId, isOwner } from "@/lib/rbac";
 import { formError, type FormResult } from "@/lib/form-result";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { saveUpload, deleteUpload } from "@/lib/storage";
@@ -392,6 +392,11 @@ export async function startDirectMessage(
 ): Promise<{ id?: string; error?: string }> {
   const user = await requireUser();
   try {
+    // Only the OWNER may start a private (direct) chat. Members/admins can still
+    // reply inside a DM the owner started with them, but can't initiate their own.
+    if (!isOwner(user.role)) {
+      throw new Error("فقط مالک می‌تواند گفتگوی خصوصی آغاز کند.");
+    }
     if (otherUserId === user.id) throw new Error("نمی‌توانید به خودتان پیام دهید.");
 
     // find an existing direct channel containing exactly these two members
