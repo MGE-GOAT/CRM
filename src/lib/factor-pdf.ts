@@ -13,6 +13,7 @@ async function renderPdf(
   await page.setContent(factorInvoiceHtml(factor), { waitUntil: "load" });
   return page.pdf({
     format: "A4",
+    landscape: true, // honor the invoice's landscape layout (the @page hint alone won't)
     printBackground: true,
     margin: { top: "0", bottom: "0", left: "0", right: "0" },
   });

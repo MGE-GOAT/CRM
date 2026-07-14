@@ -149,10 +149,10 @@ function FactorFormBody({
   const [vat, setVat] = useState(initial.vat);
   const [showSeller, setShowSeller] = useState(false);
 
-  const subtotal = items.reduce(
-    (sum, it) => sum + parseAmount(it.metrage) * parseAmount(it.quantity) * parseAmount(it.unitPrice),
-    0,
-  );
+  // Blank metrage = 1 (no multiplier); round each line to match the server total.
+  const lineAmount = (it: LineItemInput) =>
+    Math.round((parseAmount(it.metrage) || 1) * parseAmount(it.quantity) * parseAmount(it.unitPrice));
+  const subtotal = items.reduce((sum, it) => sum + lineAmount(it), 0);
   const payable = Math.max(0, subtotal - parseAmount(discount) + parseAmount(vat));
 
   const updateItem = (idx: number, patch: Partial<LineItemInput>) =>
@@ -183,7 +183,7 @@ function FactorFormBody({
   const itemsJson = JSON.stringify(
     items.map((it) => ({
       name: it.name,
-      metrage: parseAmount(it.metrage),
+      metrage: parseAmount(it.metrage) || 1, // blank/0 → no multiplier
       quantity: parseAmount(it.quantity),
       unitPrice: parseAmount(it.unitPrice),
       description: it.description || undefined,
@@ -315,8 +315,7 @@ function FactorFormBody({
             <div className="col-span-1" />
           </div>
           {items.map((it, idx) => {
-            const lineTotal =
-              parseAmount(it.metrage) * parseAmount(it.quantity) * parseAmount(it.unitPrice);
+            const lineTotal = lineAmount(it);
             return (
               <div key={idx} className="rounded-lg border border-border bg-surface-2 p-3">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">

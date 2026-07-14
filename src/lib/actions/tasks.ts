@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers } from "@/lib/rbac";
+import { requireUser, canManageUsers, isOwner } from "@/lib/rbac";
 import { TaskPriority } from "@prisma/client";
 import { formError, type FormResult } from "@/lib/form-result";
 import { getOrCreateDirectChannel } from "@/lib/chat-dm";
@@ -35,6 +35,9 @@ export async function createTask(formData: FormData): Promise<FormResult> {
       dealId: formData.get("dealId") || undefined,
       contactId: formData.get("contactId") || undefined,
     });
+    // Only the OWNER may assign a task to someone else; everyone else can only
+    // create tasks for themselves (matches the task-visibility privacy rule).
+    if (!isOwner(user.role)) d.assigneeId = user.id;
     // assignee must be a real, active user
     const assignee = await prisma.user.findFirst({
       where: { id: d.assigneeId, isActive: true },

@@ -100,7 +100,11 @@ export default async function TasksPage({
                 options={users.map((u) => ({ value: u.id, label: u.name }))}
               />
             )}
-            <TaskForm action={createTask} users={users} currentUserId={user.id} />
+            <TaskForm
+              action={createTask}
+              users={owner ? users : [{ id: user.id, name: user.name }]}
+              currentUserId={user.id}
+            />
           </div>
         }
       />

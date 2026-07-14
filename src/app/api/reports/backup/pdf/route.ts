@@ -38,10 +38,14 @@ export async function GET(req: Request) {
   const allFactors = (payload.allFactors ?? []) as ArchiveFactor[];
   const factors: InvoiceFactor[] = [];
   for (const f of allFactors) {
-    const children = (f.sources ?? [])
+    const sources = f.sources ?? [];
+    const children = sources
       .map((s) => s.childFactor)
       .filter((c): c is InvoiceFactor => !!c);
-    if (children.length > 0) factors.push(...children);
+    // Use the per-source child invoices only when EVERY source has one; if any
+    // is missing (legacy / interrupted backfill), fall back to the parent so no
+    // source invoice is silently dropped from the backup.
+    if (sources.length > 0 && children.length === sources.length) factors.push(...children);
     else factors.push(f);
   }
 
