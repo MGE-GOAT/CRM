@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageUsers } from "@/lib/rbac";
+import { requireUser, canManageUsers, isOwner } from "@/lib/rbac";
 import { PageHeader } from "@/components/page-header";
+import { SelectFilter } from "@/components/select-filter";
 import { TaskForm } from "./task-form";
 import { TaskItem } from "./task-item";
 import { createTask } from "@/lib/actions/tasks";
@@ -34,11 +35,26 @@ function SectionHead({
   );
 }
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
   const user = await requireUser();
+  const owner = isOwner(user.role);
+  const { user: filterUserId } = await searchParams;
+
+  // Privacy: only the OWNER sees everyone's tasks (and may filter by user);
+  // everyone else sees only the tasks assigned to them.
+  const where = owner
+    ? filterUserId
+      ? { assigneeId: filterUserId }
+      : {}
+    : { assigneeId: user.id };
 
   const [tasks, users] = await Promise.all([
     prisma.task.findMany({
+      where,
       orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
       include: {
         assignee: { select: { name: true, avatarColor: true } },
@@ -76,7 +92,16 @@ export default async function TasksPage() {
         title="وظایف"
         subtitle={`${formatNumber(open.length)} باز · ${formatNumber(done.length)} انجام‌شده`}
         action={
-          <TaskForm action={createTask} users={users} currentUserId={user.id} />
+          <div className="flex flex-wrap items-center gap-2">
+            {owner && (
+              <SelectFilter
+                param="user"
+                allLabel="همهٔ کاربران"
+                options={users.map((u) => ({ value: u.id, label: u.name }))}
+              />
+            )}
+            <TaskForm action={createTask} users={users} currentUserId={user.id} />
+          </div>
         }
       />
 

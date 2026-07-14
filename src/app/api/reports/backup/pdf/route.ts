@@ -29,7 +29,21 @@ export async function GET(req: Request) {
     ? (archived.payload as Record<string, unknown>)
     : ((await buildMonthArchive(month)) as unknown as Record<string, unknown>);
 
-  const factors = (payload.allFactors ?? []) as InvoiceFactor[];
+  // For SENT factors, the real printable invoices are the per-source CHILD
+  // factors (the ones edited per source) — not the parent. So: if a factor has
+  // source children, emit those; otherwise emit the factor itself.
+  type ArchiveFactor = InvoiceFactor & {
+    sources?: { childFactor?: InvoiceFactor | null }[];
+  };
+  const allFactors = (payload.allFactors ?? []) as ArchiveFactor[];
+  const factors: InvoiceFactor[] = [];
+  for (const f of allFactors) {
+    const children = (f.sources ?? [])
+      .map((s) => s.childFactor)
+      .filter((c): c is InvoiceFactor => !!c);
+    if (children.length > 0) factors.push(...children);
+    else factors.push(f);
+  }
 
   try {
     const zip = await buildBackupZip(month, payload, factors);

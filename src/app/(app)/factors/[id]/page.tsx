@@ -8,6 +8,7 @@ import { AutoRefresh } from "@/components/chat/auto-refresh";
 import { FactorActions } from "../factor-actions";
 import { FactorForm, type FactorInitial } from "../factor-form";
 import { ShareFactor, type ShareChannel } from "../share-factor";
+import { FactorShareButton } from "@/components/factor-share-button";
 import { updateFactor } from "@/lib/actions/factors";
 import {
   PAYMENT_KIND_LABEL,
@@ -126,6 +127,7 @@ export default async function FactorDetailPage({
           <ArrowRight size={16} aria-hidden="true" /> بازگشت به فاکتورها
         </Link>
         <div className="flex items-center gap-2">
+          <FactorShareButton factorId={factor.id} number={factor.number} />
           <ShareFactor factorId={factor.id} channels={shareChannels} />
           {perms.canEdit && (
             <FactorForm

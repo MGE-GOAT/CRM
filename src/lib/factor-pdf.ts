@@ -18,6 +18,23 @@ async function renderPdf(
   });
 }
 
+/** Render a SINGLE factor to a PDF buffer (for the per-factor share/download). */
+export async function renderFactorPdf(factor: InvoiceFactor): Promise<Uint8Array> {
+  const browser = await puppeteer.launch({
+    executablePath: CHROMIUM_PATH,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  });
+  try {
+    const page = await browser.newPage();
+    const pdf = await renderPdf(page, factor);
+    await page.close();
+    return pdf;
+  } finally {
+    await browser.close();
+  }
+}
+
 /**
  * Build a ZIP for a month's backup: the JSON snapshot plus one A4 PDF per
  * factor, rendered from the exact invoice layout (embedded Persian font, so
